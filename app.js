@@ -277,7 +277,11 @@
   let backendInUse = override || DEFAULT_BACKEND;
   const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
 
-  const FREE_MODELS = ['mimo-v2.5-free', 'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free'];
+  const FREE_MODELS = [
+    'mimo-v2.5-free', 'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free',
+    'laguna-s-2.1-free', 'deepseek-v4-flash-free', 'muse-spark-1.2-contributor-free',
+    'nemotron-3.5-lightning-free', 'big-pickle',
+  ];
 
   function apiBase() {
     if (!isGitHubPages) return '';
