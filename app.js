@@ -12,7 +12,6 @@
   const suggestions = document.getElementById('suggestions');
   const statusDot = document.getElementById('statusDot');
   const statusLabel = document.getElementById('statusLabel');
-  const statusIcon = document.getElementById('statusIcon');
   const sideToggle = document.getElementById('sideToggle');
   const layoutEl = document.querySelector('.layout');
   const themeSwitch = document.querySelector('.theme-switch');
@@ -25,17 +24,6 @@
   function setStatus(state, label) {
     statusDot.className = 'dot' + (state ? ' ' + state : '');
     if (label) statusLabel.textContent = label;
-    if (statusIcon) statusIcon.classList.remove('show');
-  }
-
-  function setStatusIcon(state) {
-    statusDot.className = 'dot' + (state ? ' ' + state : '');
-    statusLabel.textContent = '';
-    if (statusIcon) {
-      statusIcon.classList.remove('on', 'err');
-      if (state) statusIcon.classList.add(state);
-      statusIcon.classList.add('show');
-    }
   }
 
   // Tema: green, ocean, sunset, light, dan 'auto' (mengikuti preferensi browser).
@@ -295,10 +283,10 @@
       } catch (err) {
         attempt++;
         const delay = Math.min(attempt, 5) * 1000;
-        setStatusIcon('err');
+        setStatus('err', 'kesalahan server — mengulang (ke-' + attempt + ')…');
         if (label) console.warn('[retry] ' + label + ' percobaan ke-' + attempt + ':', err.message);
         await new Promise(function (r) { setTimeout(r, delay); });
-        setStatusIcon('on');
+        setStatus('on', 'mencoba lagi…');
       }
     }
   }
