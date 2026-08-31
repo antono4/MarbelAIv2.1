@@ -242,14 +242,15 @@ body {
 .welcome-sub { color:var(--muted); font-size:15px; line-height:1.7; margin-bottom:26px; }
 
 .slider {
-  overflow:hidden; width:100%;
-  -webkit-mask-image:linear-gradient(to right, transparent, black 7%, black 93%, transparent);
-  mask-image:linear-gradient(to right, transparent, black 7%, black 93%, transparent);
-  padding:8px 4px 6px;
+  max-width:100%;
+  overflow:visible;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+  padding:4px 2px;
 }
-.track { display:flex; gap:12px; width:max-content; animation:roll 46s linear infinite; }
-.track:hover { animation-play-state:paused; }
-@keyframes roll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+.track { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:100%; }
 .track button {
   background:#fff;
   border:none;
@@ -487,8 +488,7 @@ body {
   .welcome-sub { font-size:13.5px; margin-bottom:20px; }
   .model-list { max-height:140px; }
 
-  .slider { overflow:hidden; max-width:100%; }
-  .track { width:max-content; }
+  .slider { max-width:100%; }
   .track button { padding:10px 16px; font-size:12.5px; }
 
   .messages { flex:1 1 100%; padding:12px 14px 10px; -webkit-overflow-scrolling:touch; }
