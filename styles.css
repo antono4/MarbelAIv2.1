@@ -223,7 +223,7 @@ body {
 .welcome { flex:1; display:flex; align-items:center; justify-content:center; padding:10px 24px 20px; overflow-y:auto; }
 .welcome-inner {
   max-width:680px; width:100%; text-align:center;
-  padding:8px 10px;
+  padding:72px 10px 8px;
 }
 .eyebrow {
   display:inline-flex; align-items:center; gap:8px;
@@ -483,7 +483,7 @@ body {
 
   .thread-wrap { min-width:0; }
   .welcome { flex:1 1 100%; align-items:stretch; padding:12px 12px; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
-  .welcome-inner { padding:6px 4px; max-width:100%; }
+  .welcome-inner { padding:44px 4px 6px; max-width:100%; }
   .welcome h2 { font-size:clamp(24px,6.4vw,32px); }
   .welcome-sub { font-size:13.5px; margin-bottom:20px; }
   .model-list { max-height:140px; }
