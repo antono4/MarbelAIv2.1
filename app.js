@@ -654,7 +654,7 @@
         candidates.forEach(function (id) {
           if (all.indexOf(id) === -1) all.push(id);
         });
-        const ready = all.filter(function (id) { return candidates.indexOf(id) !== -1; });
+        const ready = candidates.filter(function (id) { return all.indexOf(id) !== -1; });
         renderModelNames(ready, ready);
         populateModelSelect(ready, ready);
         setStatus('on', 'terhubung');
