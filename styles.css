@@ -241,7 +241,12 @@ body {
 }
 .welcome-sub { color:var(--muted); font-size:15px; line-height:1.7; margin-bottom:26px; }
 
-.slider { overflow:hidden; width:100%; }
+.slider {
+  overflow:hidden; width:100%;
+  -webkit-mask-image:linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+  mask-image:linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+  padding:8px 4px 6px;
+}
 .track { display:flex; gap:12px; width:max-content; animation:roll 46s linear infinite; }
 .track:hover { animation-play-state:paused; }
 @keyframes roll { from { transform:translateX(0); } to { transform:translateX(-50%); } }
@@ -280,6 +285,7 @@ body {
   font-size:12px;
   font-family:var(--mono);
   cursor:pointer;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;
   transition:all .15s ease;
 }
 .mname:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
