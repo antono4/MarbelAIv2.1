@@ -13,12 +13,13 @@ Server berfungsi ganda: serve file statis (`index.html`, `app.js`, `styles.css`)
 - `ling-3.0-flash-fin-free` — cepat & stabil (~1s). Prioritas utama.
 - `nemotron-3-ultra-free` — cepat & stabil (~1-2s).
 - `mimo-v2.5-free` — populer, kadang rate-limit (>429).
-- `laguna-s-2.1-free` — bisa sukses tapi lambat (4-9s.
+- `laguna-s-2.1-free` — kadang sukses, tapi lambat/unavailable (4-9s.
+- `deepseek-v4-flash-free`, `muse-spark-1.2-contributor-free` — sering kena rate-limit (>429,, tapi tetap dipakai sebagai cadangan.
+- `nemotron-3.5-lightning-free` — sangat lambat (>9s,, kadang gagal.
+- `big-pickle` — model anonim dari opencode 5 (tidak butuh API key,, kadang 429 — cadangan tambahan.
 
 
 - `hy3-free` — **sudah tidak didukung** upstream (ModelError — jangan dipakai).
-- `nemotron-3.5-lightning-free` — sangat lambat (>9s).
-- `deepseek-v4-flash-free`, `muse-spark-1.2-contributor-free` — error dari provider.
 
 ## Pola chat (ensemble + fallback)
 
