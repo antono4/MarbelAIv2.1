@@ -134,6 +134,7 @@ body {
 .dot.on { background:var(--ok); }
 .dot.err { background:var(--err); }
 .status-icon { display:none; align-items:center; justify-content:center; color:var(--err); flex:0 0 auto; }
+.status-icon.on { color:var(--ok); }
 .status-icon.show { display:inline-flex; }
 .status-icon svg { animation:statusSpin 1s linear infinite; }
 @keyframes statusSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
