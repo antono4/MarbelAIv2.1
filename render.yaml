@@ -1,0 +1,25 @@
+# Render Blueprint — deploy backend Marbel AI satu deploy.
+# Cara pakai: buat "New Blueprint" di Render, hubungkan repo ini — Render membuat service di atas.
+# UPSTREAM menunjuk ke endpoint OpenAI-compatible "Zen" (opencode.ai/zen/v1), gratis dan tanpa API key.
+services:
+  - type: web
+    name: marbel-ai
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: 10000
+      # UPSTREAM: endpoint OpenAI-compatible (Zen — opencode.ai/zen/v1), gratis tanpa API key.
+      - key: UPSTREAM
+        value: https://opencode.ai/zen
+      - key: API_KEY
+        sync: false
+      - key: ALLOW_ORIGIN
+        value: "*"
+      - key: USE_SSE
+        value: "0"
+
+
