@@ -31,7 +31,11 @@
   function setStatusIcon(state) {
     statusDot.className = 'dot' + (state ? ' ' + state : '');
     statusLabel.textContent = '';
-    if (statusIcon) statusIcon.classList.add('show');
+    if (statusIcon) {
+      statusIcon.classList.remove('on', 'err');
+      if (state) statusIcon.classList.add(state);
+      statusIcon.classList.add('show');
+    }
   }
 
   // Tema: green, ocean, sunset, light, dan 'auto' (mengikuti preferensi browser).
@@ -298,7 +302,7 @@
         setStatusIcon('err');
         if (label) console.warn('[retry] ' + label + ' percobaan ke-' + attempt + ':', err.message);
         await new Promise(function (r) { setTimeout(r, delay); });
-        setStatus('on', 'mencoba lagi…');
+        setStatusIcon('on');
       }
     }
   }
