@@ -16,7 +16,7 @@ Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan
 
 - **Ensemble multi-model** - mode Auto Model menjalankan semua model gratis secara paralel dan memakai jawaban yang paling cepat berhasil; mode single-model punya failover otomatis ke model cadangan.
 - **Tombol Salin & Ulangi** - salin jawaban atau minta AI menulis ulang jawaban yang sama.
-- **Antarmuka chat modern** - tersedia berbagai tema, sidebar riwayat percakapan, dan dukungan blok kode..
+- **Antarmuka chat modern** - sidebar riwayat percakapan dan dukungan blok kode..
 - **Cepat dan responsif** - efek mengetik agar terasa ringan, plus cache daftar model agar muat cepat..
 - **Backend tangguh** - dukungan beberapa upstream cadangan, header keamanan, timeout, dan tanpa dependency npm..
 - **Siap deploy** - konfigurasi untuk Render Blueprint, Railway, Docker, dan GitHub Pages untuk frontend..
@@ -102,7 +102,7 @@ MarbelAI/
 - server.js       Backend static file server dan proxy OpenAI-compatible
 - app.js          Frontend logika chat, streaming, dan ensemble multi-model
 - index.html      Halaman utama UI
-- styles.css       Tema dan gaya
+- styles.css       Gaya arsitektur UI
 - Dockerfile       Image Docker
 - render.yaml      Blueprint Render
 - railway.json     Konfigurasi Railway

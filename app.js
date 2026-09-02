@@ -15,7 +15,6 @@
   const statusIcon = document.getElementById('statusIcon');
   const sideToggle = document.getElementById('sideToggle');
   const layoutEl = document.querySelector('.layout');
-  const themeSwitch = document.querySelector('.theme-switch');
 
   let busy = false;
   let threadId = 0;
@@ -36,52 +35,6 @@
       if (state) statusIcon.classList.add(state);
       statusIcon.classList.add('show');
     }
-  }
-
-  // Tema: green, ocean, sunset, light, dan 'auto' (mengikuti preferensi browser).
-  const THEMES = ['green', 'ocean', 'sunset', 'light'];
-
-  function resolvedTheme(name) {
-    if (name === 'auto') {
-      const light = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-      return light ? 'light' : 'green';
-    }
-    return THEMES.indexOf(name) === -1 ? 'green' : name;
-  }
-
-  let themeMedia = null;
-  function autoApplyTheme() {
-    try {
-      if (localStorage.getItem('marbel-theme') === 'auto') setTheme('auto', false);
-    } catch (e) {}
-  }
-  function wireAutoTheme(name) {
-    const mq = (window.matchMedia) ? window.matchMedia('(prefers-color-scheme: light)') : null;
-    if (name === 'auto' && mq && mq.addListener) {
-      if (!themeMedia) { themeMedia = mq; mq.addListener(autoApplyTheme); }
-    } else if (themeMedia) {
-      themeMedia.removeListener(autoApplyTheme);
-      themeMedia = null;
-    }
-  }
-
-  function setTheme(name, save) {
-    if (THEMES.indexOf(name) === -1 && name !== 'auto') name = 'green';
-    const resolved = resolvedTheme(name);
-    document.documentElement.dataset.theme = resolved;
-    document.querySelectorAll('.tsw-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.theme === name);
-    });
-    wireAutoTheme(name);
-    if (save !== false) {
-      try { localStorage.setItem('marbel-theme', name); } catch (e) {}
-    }
-  }
-
-  function initTheme() {
-    let saved = 'green';
-    try { saved = localStorage.getItem('marbel-theme') || 'green'; } catch (e) {}
-    setTheme(saved, false);
   }
 
   function esc(s) {
@@ -586,12 +539,6 @@
       ? 'Tampilkan sidebar'
       : 'Sembunyikan sidebar';
   });
-  if (themeSwitch) {
-    themeSwitch.addEventListener('click', function (e) {
-      const btn = e.target.closest('.tsw-btn');
-      if (btn) setTheme(btn.dataset.theme);
-    });
-  }
   suggestions.addEventListener('click', function (e) {
     const btn = e.target.closest('button[data-prompt]');
     if (btn) onSend(btn.getAttribute('data-prompt'));
@@ -665,7 +612,6 @@
       });
   }
 
-  initTheme();
   newThread();
   loadModels();
 })();

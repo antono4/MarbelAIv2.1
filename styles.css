@@ -2,7 +2,7 @@
    Marbel AI — "Playful Pastel", struktur top-bar
    Header atas + baris percakapan horizontal (tanpa sidebar).
    ============================================================*/
-:root, html[data-theme="green"] {
+:root {
   --bg:#faf7f2;
   --bg-soft:#f3ede4;
   --line:#eae2d6;
@@ -19,51 +19,6 @@
   --font-body:"Plus Jakarta Sans","Inter","Segoe UI",system-ui,sans-serif;
   --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --mono:var(--font-mono);
-}
-
-html[data-theme="ocean"] {
-  --bg:#f2f7fb;
-  --bg-soft:#e7f0f8;
-  --line:#dbe6ef;
-  --text:#1e2a3a;
-  --muted:#7189a0;
-  --accent:#0984e3;
-  --accent-2:#00cec9;
-  --accent-ink:#ffffff;
-  --mine:#e3f0ff;
-  --ok:#0984e3;
-  --code:#0b5c8a;
-  --code-bg:#e9f5fd;
-}
-
-html[data-theme="sunset"] {
-  --bg:#fdf6f0;
-  --bg-soft:#f9ebe0;
-  --line:#f2e0d2;
-  --text:#3a2a22;
-  --muted:#a58a78;
-  --accent:#e17055;
-  --accent-2:#fd79a8;
-  --accent-ink:#ffffff;
-  --mine:#ffe9e0;
-  --ok:#e17055;
-  --code:#a03a5e;
-  --code-bg:#fdeef4;
-}
-
-html[data-theme="light"] {
-  --bg:#f8f9fb;
-  --bg-soft:#edf0f4;
-  --line:#e3e8ee;
-  --text:#22293a;
-  --muted:#6b7787;
-  --accent:#5352ed;
-  --accent-2:#2ed573;
-  --accent-ink:#ffffff;
-  --mine:#ecebff;
-  --ok:#2ed573;
-  --code:#0b6b5c;
-  --code-bg:#e9f7f0;
 }
 
 * { box-sizing:border-box; margin:0; padding:0; }
@@ -139,16 +94,7 @@ body {
 .status-icon svg { animation:statusSpin 1s linear infinite; }
 @keyframes statusSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
 
-.theme-switch { display:flex; align-items:center; gap:4px; background:#fff; border:1px solid var(--line); border-radius:999px; padding:4px; }
-.tsw-btn { border:none; background:transparent; cursor:pointer; width:26px; height:26px; display:grid; place-items:center; border-radius:50%; padding:0; transition:background .14s ease; }
-.tsw-btn:hover { background:var(--bg-soft); }
-.tsw-btn.active { background:var(--mine); box-shadow:0 0 0 1.5px var(--accent); }
-.tsw-swatch { width:15px; height:15px; border-radius:50%; display:block; border:1px solid rgba(0,0,0,.1); }
-.sw-green { background:linear-gradient(135deg,var(--accent),var(--accent-2)); }
-.sw-ocean { background:linear-gradient(135deg,#0984e3,#00cec9); }
-.sw-sunset { background:linear-gradient(135deg,#e17055,#fd79a8); }
-.sw-light { background:linear-gradient(135deg,#5352ed,#2ed573); }
-.sw-auto { background:conic-gradient(#6c5ce7,#0984e3,#e17055,#6c5ce7); display:grid; place-items:center; font-size:11px; line-height:1; color:#fff; }
+
 
 .side-btn {
   background:#fff; border:1px solid var(--line); color:var(--muted);
