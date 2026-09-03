@@ -222,8 +222,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex:0 0 auto; }
 .dot.on { background:var(--ok); }
 .dot.err { background:var(--err); }
-.status-icon {
-  display:none; align-items:center; justify-content:center; flex:0 0 auto;
+.status-icon { display:none !important; align-items:center; justify-content:center; flex:0 0 auto;
   width:26px; height:26px; border-radius:50%;
   color:var(--muted);
   position:relative;
