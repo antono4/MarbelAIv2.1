@@ -78,7 +78,7 @@ body {
 .brand-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .brand-name { font-weight:800; font-size:17px; letter-spacing:-.01em; white-space:nowrap; }
 .brand-high { color:var(--accent); margin-left:1px; }
-.brand-tag { font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--muted); white-space:nowrap; }
+.brand-tag { font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; font-weight:700; color:var(--muted); white-space:nowrap; }
 
 .new-thread {
   display:flex; align-items:center; justify-content:center; gap:8px;
@@ -86,8 +86,8 @@ body {
   color:var(--text);
   border:1px solid var(--line);
   border-radius:10px;
-  padding:10px 12px;
-  font-size:13px;
+  padding:11px 12px;
+  font-size:13.5px;
   font-weight:600;
   font-family:inherit;
   cursor:pointer;
@@ -103,7 +103,7 @@ body {
   flex:1 1 auto;
   min-height:0;
 }
-.conv-label { font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); font-weight:800; padding:0 6px; }
+.conv-label { font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:800; padding:0 6px; }
 .thread-list {
   list-style:none;
   display:flex; flex-direction:column; gap:2px;
@@ -113,9 +113,9 @@ body {
   min-height:0;
 }
 .thread-item {
-  padding:9px 12px;
+  padding:10px 12px;
   border-radius:8px;
-  font-size:13px;
+  font-size:13.5px;
   color:var(--text);
   cursor:pointer;
   display:flex; align-items:center; gap:8px;
@@ -126,14 +126,14 @@ body {
 .thread-item:hover { background:color-mix(in srgb,var(--line) 55%,transparent); }
 .thread-item.active { background:var(--mine); }
 .thread-item.active .tname { color:var(--accent); font-weight:700; }
-.thread-item .tid { font-size:10.5px; color:var(--muted); flex:0 0 auto; font-family:var(--mono); }
+.thread-item .tid { font-size:11.5px; color:var(--muted); flex:0 0 auto; font-family:var(--mono); }
 .thread-item .tname { overflow:hidden; text-overflow:ellipsis; }
 
 .sidebar-foot {
   flex:0 0 auto;
   padding:12px 6px 2px;
-  font-size:10.5px; color:var(--muted); font-weight:700;
-  letter-spacing:.08em; text-transform:uppercase;
+  font-size:11.5px; color:var(--muted); font-weight:700;
+  letter-spacing:.07em; text-transform:uppercase;
   border-top:1px solid var(--line);
   margin-top:12px;
 }
@@ -151,17 +151,17 @@ body {
 .topbar-left { display:flex; align-items:center; gap:10px; min-width:0; }
 .header-pill {
   display:inline-flex; align-items:center; gap:8px;
-  font-size:11.5px; font-weight:600; color:var(--muted);
+  font-size:12.5px; font-weight:600; color:var(--muted);
   background:#fff;
   border:1px solid var(--line);
   border-radius:999px;
-  padding:6px 13px;
+  padding:7px 14px;
 }
 .hp-dot { width:7px; height:7px; border-radius:50%; background:var(--ok); }
 
 .topbar-right { display:flex; align-items:center; gap:10px; flex:0 0 auto; }
 .status-row { display:flex; align-items:center; gap:8px; min-width:0; }
-#statusLabel { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px; }
+#statusLabel { font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:170px; }
 .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex:0 0 auto; }
 .dot.on { background:var(--ok); }
 .dot.err { background:var(--err); }
@@ -195,7 +195,7 @@ body {
   border-radius:999px;
   background:var(--mine);
   color:var(--accent);
-  font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
+  font-size:12px; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
 }
 .welcome h2 { font-weight:800; font-size:clamp(28px,4.4vw,40px); letter-spacing:-.02em; margin-bottom:12px; line-height:1.12; }
 .welcome h2 .grad {
@@ -234,8 +234,8 @@ body {
 /* ================== model list ================== */
 .model-section { margin-top:26px; text-align:left; }
 .ms-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
-.ms-title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); font-weight:800; }
-.ms-count { font-size:12px; color:var(--muted); }
+.ms-title { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:800; }
+.ms-count { font-size:13px; color:var(--muted); }
 
 .model-list { display:flex; flex-wrap:wrap; gap:8px; max-height:160px; overflow-y:auto; }
 .mname {
@@ -243,8 +243,8 @@ body {
   border:1px solid var(--line);
   color:var(--muted);
   border-radius:999px;
-  padding:7px 13px;
-  font-size:11.5px;
+  padding:8px 14px;
+  font-size:12.5px;
   font-family:var(--mono);
   cursor:pointer;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;
@@ -285,19 +285,19 @@ body {
 }
 .msg.assistant.err { color:var(--err); }
 
-.msg .role-tag { display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--muted); margin-bottom:10px; font-weight:700; letter-spacing:.02em; }
+.msg .role-tag { display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--muted); margin-bottom:10px; font-weight:700; letter-spacing:.02em; }
 .role-tag .agent-dot {
-  width:24px; height:24px; border-radius:50%;
+  width:26px; height:26px; border-radius:50%;
   background:linear-gradient(135deg,var(--accent),var(--accent-2));
   color:var(--accent-ink);
   display:grid; place-items:center;
-  font-size:11px;
+  font-size:12px;
 }
 
 .msg .body { color:var(--text); display:flex; flex-direction:column; gap:10px; font-size:15.5px; line-height:1.75; }
 .msg .inner { width:100%; max-width:100%; }
 
-.msg code { font-family:var(--mono); font-size:.92em; background:var(--code-bg); color:var(--code); padding:2.5px 7px; border-radius:6px; }
+.msg code { font-family:var(--mono); font-size:.94em; background:var(--code-bg); color:var(--code); padding:3px 8px; border-radius:6px; }
 .msg pre {
   background:#fff;
   border:1px solid var(--line);
@@ -311,7 +311,7 @@ body {
   box-shadow:0 1px 8px rgba(40,30,80,.04);
 }
 
-.token { display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12px; color:var(--muted); }
+.token { display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:13px; color:var(--muted); }
 
 /* ================== aksi pesan ================== */
 .m-actions { display:flex; gap:6px; margin-top:12px; }
@@ -321,8 +321,8 @@ body {
   border:1px solid var(--line);
   color:var(--muted);
   border-radius:999px;
-  padding:5px 13px;
-  font-size:12px;
+  padding:6px 15px;
+  font-size:13px;
   font-family:inherit;
   font-weight:600;
   cursor:pointer;
@@ -331,7 +331,7 @@ body {
 .m-act:hover { color:var(--accent); border-color:var(--accent); }
 .m-act.ok { color:var(--accent); border-color:var(--accent); background:var(--mine); }
 
-.model-tag { color:var(--accent); font-weight:700; font-family:var(--mono); font-size:11.5px; }
+.model-tag { color:var(--accent); font-weight:700; font-family:var(--mono); font-size:12.5px; }
 
 /* typing indicator */
 .typing { display:inline-flex; gap:5px; align-items:center; }
@@ -346,7 +346,7 @@ body {
   display:none;
   align-items:center; justify-content:center; gap:9px;
   padding:9px 20px;
-  font-size:12px; color:var(--muted); font-weight:600;
+  font-size:13px; color:var(--muted); font-weight:600;
   background:#fff;
   border:1px solid var(--line);
   border-radius:999px;
@@ -396,7 +396,7 @@ body {
   border:none; outline:none; resize:none;
   color:var(--text);
   font-family:inherit;
-  font-size:15.5px;
+  font-size:16px;
   line-height:1.6;
   min-height:48px;
   max-height:200px;
@@ -406,15 +406,15 @@ body {
 .composer-footer { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-top:8px; }
 .cf-left { display:flex; align-items:center; }
 .custom-select { display:flex; align-items:center; gap:9px; }
-.cs-label { font-size:11px; color:var(--muted); font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.cs-label { font-size:12px; color:var(--muted); font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
 
 .custom-select select {
   background:#fff;
   color:var(--text);
   border:1px solid var(--line);
   border-radius:999px;
-  padding:7px 12px;
-  font-size:12px;
+  padding:8px 13px;
+  font-size:13px;
   font-family:var(--mono);
   cursor:pointer;
   max-width:210px;
