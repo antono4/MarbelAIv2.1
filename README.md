@@ -2,11 +2,10 @@
 
 # Marbel AI
 
-Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 4 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
+Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 8 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
 
 **Link:**
 - [Demo](https://antono4.github.io/MarbelAIv2.1/)
-
 
 </div>
 
@@ -16,47 +15,49 @@ Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan
 
 - **Ensemble multi-model** - mode Auto Model menjalankan semua model gratis secara paralel dan memakai jawaban yang paling cepat berhasil; mode single-model punya failover otomatis ke model cadangan.
 - **Tombol Salin & Ulangi** - salin jawaban atau minta AI menulis ulang jawaban yang sama.
-- **Antarmuka chat modern** - sidebar riwayat percakapan dan dukungan blok kode..
-- **Cepat dan responsif** - efek mengetik agar terasa ringan, plus cache daftar model agar muat cepat..
-- **Backend tangguh** - dukungan beberapa upstream cadangan, header keamanan, timeout, dan tanpa dependency npm..
-- **Siap deploy** - konfigurasi untuk Render Blueprint, Railway, Docker, dan GitHub Pages untuk frontend..
+- **Antarmuka chat modern** - sidebar riwayat percakapan, dark mode siang/malam, dan dukungan blok kode.
+- **Cepat dan responsif** - efek mengetik agar terasa ringan, plus cache daftar model agar muat cepat.
+- **Backend tangguh** - dukungan beberapa upstream cadangan, header keamanan, timeout, dan tanpa dependency npm.
+- **Siap deploy** - konfigurasi untuk Render Blueprint, Railway, Docker, dan GitHub Pages untuk frontend.
 
 ## Model Gratis (Upstream Zen dari opencode.ai)
 
+Daftar model gratis yang aktif di `app.js` (`FREE_MODELS`):
+
 | Model | Status |
 |---|---|
+| `mimo-v2.5-free` | Populer, kadang rate-limit |
 | `ling-3.0-flash-fin-free` | Cepat dan stabil (prioritas utama) |
 | `nemotron-3-ultra-free` | Cepat dan stabil |
-| `mimo-v2.5-free` | Populer, kadang rate-limit |
 | `laguna-s-2.1-free` | Bisa sukses tapi lambat |
-| `hy3-free` | Tidak didukung upstream |
+| `deepseek-v4-flash-free` | Tersedia, kadang tidak merespons |
+| `muse-spark-1.2-contributor-free` | Tersedia, kadang tidak merespons |
 | `nemotron-3.5-lightning-free` | Sangat lambat |
-| `deepseek-v4-flash-free` dan `muse-spark-1.2-contributor-free` | Error dari provider |
+| `big-pickle` | Model cadangan eksperimental |
 
 ## Menjalankan Secara Lokal
 
 Prasyarat Node.js versi 18 atau lebih baru.
 
 ```bash
-git clone https://github.com/antono4/MarbelAI.git
-cd MarbelAI
+git clone https://github.com/antono4/MarbelAIv2.1.git
+cd MarbelAIv2.1
 PORT=12000 UPSTREAM=https://opencode.ai/zen node server.js
 ```
 
-Buka `http://localhost:12000` di browser. Tanpa variabel `UPSTREAM`, server memakai default `http://localhost:20128` untuk pengembangan lokal dengan proxy lain..
+Buka `http://localhost:12000` di browser. Tanpa variabel `UPSTREAM`, server memakai default `http://localhost:20128` untuk pengembangan lokal dengan proxy lain.
 
 ## Konfigurasi (Environment Variables)
 
 | Variabel | Default | Deskripsi |
 |---|---|---|
 | `PORT` | `12000` | Port HTTP server |
-| `UPSTREAM` | `http://localhost:20128` | Base URL endpoint OpenAI-compatible, bisa daftar dipisah koma (contoh Zen `https://opencode.ai/zen/v1`) |
+| `UPSTREAM` | `http://localhost:20128` | Base URL endpoint OpenAI-compatible, bisa daftar dipisah koma (contoh Zen `https://opencode.ai/zen`) |
 | `API_KEY` | kosong | API key upstream untuk otentikasi `/v1` (boleh kosong bila tidak butuh) |
+| `DEFAULT_MODEL` | `mimo-v2.5-free` | Model default bila klien tidak mengirim `model` |
 | `ALLOW_ORIGIN` | `*` | Origin yang diizinkan untuk CORS |
 | `USE_SSE` | `1` | Mode streaming (`1` = stream, `0` = JSON biasa) |
 | `MODELS_TTL` | `300` | TTL (detik) cache daftar model di `/api/models` |
-
-Lihat salinan penuh di `.env.example`.
 
 ## API
 
@@ -90,28 +91,27 @@ Buka `http://localhost:10000`.
 
 Proyek ini mendukung beberapa platform:
 
-- **Render** - gunakan `render.yaml` sebagai Render Blueprint (gratis..
-- **Railway** - gunakan `railway.json` sebagai konfigurasi build atau deploy..
-- **GitHub Pages** - frontend statis berfungsi di GitHub Pages dan backend memakai default `https://marbel-ai.onrender.com` yang bisa di-override dengan parameter query `?backend=URL`..
-- **Docker** - lihat bagian Docker di atas..
+- **Render** - gunakan `render.yaml` sebagai Render Blueprint (gratis).
+- **Railway** - gunakan `railway.json` sebagai konfigurasi build atau deploy.
+- **GitHub Pages** - frontend statis berfungsi di GitHub Pages dan backend memakai default `https://marbel-ai.onrender.com` yang bisa di-override dengan parameter query `?backend=URL`.
+- **Docker** - lihat bagian Docker di atas.
 
 ## Struktur Proyek
 
 ```
-MarbelAI/
+MarbelAIv2.1/
 - server.js       Backend static file server dan proxy OpenAI-compatible
 - app.js          Frontend logika chat, streaming, dan ensemble multi-model
 - index.html      Halaman utama UI
-- styles.css       Gaya arsitektur UI
-- Dockerfile       Image Docker
-- render.yaml      Blueprint Render
-- railway.json     Konfigurasi Railway
-- .env.example     Contoh variabel lingkungan
+- styles.css      Gaya arsitektur UI
+- Dockerfile      Image Docker
+- render.yaml     Blueprint Render
+- railway.json    Konfigurasi Railway
 ```
 
 ## Lisensi
 
-Didistribusikan di bawah [Lisensi MIT](LICENSE. Copyright 2026 [Antono4](https://github.com/antono4..
+Didistribusikan di bawah [Lisensi MIT](LICENSE). Copyright 2026 [Antono4](https://github.com/antono4).
 
 ---
 
