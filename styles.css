@@ -203,14 +203,10 @@ body {
   -webkit-background-clip:text; background-clip:text;
   -webkit-text-fill-color:transparent; color:transparent;
 }
-.welcome-sub { color:var(--muted); font-size:14.5px; line-height:1.7; margin-bottom:24px; }
+.welcome-sub { display:none; }
 
-.slider {
-  max-width:100%;
-  display:flex; flex-wrap:wrap; justify-content:center;
-  gap:10px;
-  padding:4px 2px;
-}
+.slider { display:none; }
+.model-section { display:none; }
 .track { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:100%; }
 .track button {
   background:#fff;
