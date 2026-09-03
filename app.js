@@ -16,6 +16,11 @@
   const sideToggle = document.getElementById('sideToggle');
   const layoutEl = document.querySelector('.layout');
 
+  if (window.innerWidth <= 768) {
+    layoutEl.classList.add('collapsed');
+    sideToggle.title = 'Tampilkan sidebar';
+  }
+
   let busy = false;
   let threadId = 0;
   let threadCount = 0;
@@ -428,7 +433,10 @@
       const first = h.items.find(function (i) { return i.role === 'user'; });
       const name = (first ? first.content : 'Thread ' + h.id);
       li.innerHTML = '<span class="tid">#' + h.id + '</span><span class="tname">' + esc(name.slice(0, 40)) + '</span>';
-      li.addEventListener('click', function () { loadThread(h.id); });
+      li.addEventListener('click', function () {
+        if (window.innerWidth <= 768) layoutEl.classList.add('collapsed');
+        loadThread(h.id);
+      });
       threadList.appendChild(li);
     });
   }
@@ -532,7 +540,10 @@
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); }
   });
-  newThreadBtn.addEventListener('click', newThread);
+  newThreadBtn.addEventListener('click', function () {
+    if (window.innerWidth <= 768) layoutEl.classList.add('collapsed');
+    newThread();
+  });
   sideToggle.addEventListener('click', function () {
     layoutEl.classList.toggle('collapsed');
     sideToggle.title = layoutEl.classList.contains('collapsed')
