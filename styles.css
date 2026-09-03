@@ -377,7 +377,7 @@ body {
 /* ================== Composer (ala Claude, di tengah bawah) ================== */
 .composer {
   margin:6px auto 16px;
-  width:min(780px,calc(100% - 32px)));
+  width:min(780px,calc(100% - 32px));
   background:var(--bg);
   border:1px solid var(--line);
   border-radius:16px;
