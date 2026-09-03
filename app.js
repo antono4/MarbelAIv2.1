@@ -472,7 +472,7 @@
 
   function resize() {
     input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 220) + 'px';
+    input.style.height = Math.min(220, Math.max(48, input.scrollHeight)) + 'px';
   }
 
   async function onSend(rawText) {
