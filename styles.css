@@ -222,11 +222,41 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex:0 0 auto; }
 .dot.on { background:var(--ok); }
 .dot.err { background:var(--err); }
-.status-icon { display:none; align-items:center; justify-content:center; color:var(--err); flex:0 0 auto; }
+.status-icon {
+  display:none; align-items:center; justify-content:center; flex:0 0 auto;
+  width:26px; height:26px; border-radius:50%;
+  color:var(--muted);
+  position:relative;
+}
+.status-icon::before {
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:color-mix(in srgb,currentColor 12%,transparent);
+}
 .status-icon.on { color:var(--ok); }
+.status-icon.err { color:var(--err); }
 .status-icon.show { display:inline-flex; }
-.status-icon svg { animation:statusSpin 1s linear infinite; }
-@keyframes statusSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+
+.status-icon svg { position:relative; flex:0 0 auto; }
+.status-icon .icon-check, .status-icon .icon-alert { display:none; }
+.status-icon.on .icon-check { display:block; }
+.status-icon.err .icon-alert { display:block; }
+.status-icon:not(.on):not(.err) .icon-spinner { display:block; }
+.status-icon.on .icon-spinner, .status-icon.err .icon-spinner { display:none; }
+
+.status-icon:not(.on):not(.err) .icon-spinner { animation:statusSpin 1.1s linear infinite; }
+.status-icon.on .icon-check { animation:statusPop .35s ease; }
+.status-icon.err .icon-alert { animation:statusPulse 1.6s ease-in-out infinite; }
+
+@keyframes statusSpin { to { transform:rotate(360deg); } }
+@keyframes statusPop {
+  0% { transform:scale(.4); opacity:0; }
+  70% { transform:scale(1.15); }
+  100% { transform:scale(1); opacity:1; }
+}
+@keyframes statusPulse {
+  0%,100% { transform:scale(1); }
+  50% { transform:scale(1.12); }
+}
 
 .side-btn {
   background:var(--panel); border:1px solid var(--line); color:var(--muted);
