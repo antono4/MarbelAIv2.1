@@ -5,8 +5,8 @@
 Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 4 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
 
 **Link:**
-- [Demo](https://antono4.github.io/MarbelAI/)
-- [Backend di Render](https://marbel-ai.onrender.com)
+- [Demo](https://antono4.github.io/MarbelAIv2.1/)
+
 
 </div>
 
