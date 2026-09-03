@@ -14,6 +14,8 @@
   const statusLabel = document.getElementById('statusLabel');
   const statusIcon = document.getElementById('statusIcon');
   const sideToggle = document.getElementById('sideToggle');
+  const themeToggle = document.getElementById('themeToggle');
+  const panelHide = document.getElementById('panelHide');
   const layoutEl = document.querySelector('.layout');
 
   if (window.innerWidth <= 768) {
@@ -549,6 +551,38 @@
     sideToggle.title = layoutEl.classList.contains('collapsed')
       ? 'Tampilkan sidebar'
       : 'Sembunyikan sidebar';
+  });
+
+  const setTheme = function (theme) {
+    if (theme == null) {
+      delete document.documentElement.dataset.theme;
+      localStorage.removeItem('marbel-theme');
+    } else {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem('marbel-theme', theme);
+    }
+  };
+
+  const savedTheme = localStorage.getItem('marbel-theme');
+  if (savedTheme == null) {
+    if (window.matchMedia('(prefers-color-scheme:dark)').matches) {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  } else {
+    setTheme(savedTheme);
+  }
+
+  let themeDark = document.documentElement.dataset.theme === 'dark';
+  themeToggle.addEventListener('click', function () {
+    themeDark = !themeDark;
+    setTheme(themeDark ? 'dark' : 'light');
+  });
+
+  panelHide.addEventListener('click', function () {
+    layoutEl.classList.toggle('collapsed');
+    panelHide.title = layoutEl.classList.contains('collapsed')
+      ? 'Tampilkan panel'
+      : 'Sembunyikan panel';
   });
   suggestions.addEventListener('click', function (e) {
     const btn = e.target.closest('button[data-prompt]');
