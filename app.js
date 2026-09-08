@@ -238,14 +238,13 @@
   const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
 
   const FREE_MODELS = [
-    // Urutan = prioritas (yang paling cepat & stabil dipakai lebih dulu).
-    // Valid per 2026-09-08: langsung dites ke zen.opencode.ai dengan
-    // header X-Session-ID. Model lain (laguna-s-2.1-free, deepseek-v4flash-free,
-    // muse-spark-*.contributor-free, nemotron-3.5-lightning-free) sudah
-    // tidak lagi didukung /rate-limit berat /timeout — dikeluarkan agar UI
-    // tidak menampilkan model mati.
-    'ling-3.0-flash-fin-free', 'mimo-v2.5-free', 'nemotron-3-ultra-free',
-    'big-pickle',
+    // Hanya model yang benar-benar aktif & stabil per 2026-09-08 (dites
+    // langsung ke zen.opencode.ai dengan header X-Session-ID).
+    // Mulai 2026-09-08: mimo-v2.5-free & big-pickle sering rate-limit
+    // (429/503) — nonaktif; laguna/deepseek/muse/nemotron-3.5 sudah
+    // mati/tidak didukung. Cukup dua ini: ling (cepat/stabil) dan
+    // nemotron-3-ultra (aktif, kadang lambat — cadangan paralel).
+    'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free',
   ];
 
   function apiBase() {
