@@ -238,9 +238,14 @@
   const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
 
   const FREE_MODELS = [
-    'mimo-v2.5-free', 'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free',
-    'laguna-s-2.1-free', 'deepseek-v4-flash-free', 'muse-spark-1.2-contributor-free',
-    'nemotron-3.5-lightning-free', 'big-pickle',
+    // Urutan = prioritas (yang paling cepat & stabil dipakai lebih dulu).
+    // Valid per 2026-09-08: langsung dites ke zen.opencode.ai dengan
+    // header X-Session-ID. Model lain (laguna-s-2.1-free, deepseek-v4flash-free,
+    // muse-spark-*.contributor-free, nemotron-3.5-lightning-free) sudah
+    // tidak lagi didukung /rate-limit berat /timeout — dikeluarkan agar UI
+    // tidak menampilkan model mati.
+    'ling-3.0-flash-fin-free', 'mimo-v2.5-free', 'nemotron-3-ultra-free',
+    'big-pickle',
   ];
 
   function apiBase() {
@@ -296,6 +301,8 @@
 
       if (!res.ok) {
         const errText = await res.text();
+        // 429 = rate-limit: langsung lewati model ini (jangan tunggu retry lama).
+        if (res.status === 429) throw new Error('Rate limit (429): lewati ' + modelId);
         throw new Error('HTTP ' + res.status + ': ' + errText.slice(0, 100));
       }
 
@@ -340,6 +347,8 @@
       }).then(async function (res) {
         if (!res.ok) {
           const t = await res.text();
+          // 429 = rate-limit: langsung lewati model ini (jangan tunggu retry lama).
+          if (res.status === 429) throw new Error('Rate limit (429): lewati ' + modelId);
           throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 100));
         }
         return res.json();

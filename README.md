@@ -2,7 +2,7 @@
 
 # Marbel AI
 
-Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 8 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
+Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 4 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
 
 **Link:**
 - [Demo](https://antono4.github.io/MarbelAIv2.1/)
@@ -22,18 +22,21 @@ Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan
 
 ## Model Gratis (Upstream Zen dari opencode.ai)
 
-Daftar model gratis yang aktif di `app.js` (`FREE_MODELS`):
+Daftar model gratis yang aktif di `app.js` (`FREE_MODELS`), diverifikasi langsung
+pada 2026-09-08 terhadap zen.opencode.ai (dengan `X-Session-ID`):
 
 | Model | Status |
 |---|---|
-| `mimo-v2.5-free` | Populer, kadang rate-limit |
 | `ling-3.0-flash-fin-free` | Cepat dan stabil (prioritas utama) |
-| `nemotron-3-ultra-free` | Cepat dan stabil |
-| `laguna-s-2.1-free` | Bisa sukses tapi lambat |
-| `deepseek-v4-flash-free` | Tersedia, kadang tidak merespons |
-| `muse-spark-1.2-contributor-free` | Tersedia, kadang tidak merespons |
-| `nemotron-3.5-lightning-free` | Sangat lambat |
+| `mimo-v2.5-free` | Populer,sering rate-limit (429) |
+| `nemotron-3-ultra-free` | Tersedia,tapi lambat (20-60s) dan kadang overload |
 | `big-pickle` | Model cadangan eksperimental |
+
+> **Catatan:** `laguna-s-2.1-free` sudah tidak didukung upstream
+> (ModelError); `deepseek-v4-flash-free` dan `muse-spark-*-contributor-free`
+> sedang unavailable/error (500/400); `nemotron-3.5-lightning-free` timeout
+> >30-60s — kelima model ini dikeluarkan dari daftar agar UI tidak
+> menampilkan model mati.
 
 ## Menjalankan Secara Lokal
 
@@ -54,7 +57,9 @@ Buka `http://localhost:12000` di browser. Tanpa variabel `UPSTREAM`, server mema
 | `PORT` | `12000` | Port HTTP server |
 | `UPSTREAM` | `http://localhost:20128` | Base URL endpoint OpenAI-compatible, bisa daftar dipisah koma (contoh Zen `https://opencode.ai/zen`) |
 | `API_KEY` | kosong | API key upstream untuk otentikasi `/v1` (boleh kosong bila tidak butuh) |
-| `DEFAULT_MODEL` | `mimo-v2.5-free` | Model default bila klien tidak mengirim `model` |
+| `DEFAULT_MODEL` | `ling-3.0-flash-fin-free` | Model default bila klien tidak mengirim `model` |
+| `SESSION_POOL_SIZE` | `16` | Jumlah sesi bergiliran untuk header `X-Session-ID` (kuota harian free tier Zen) |
+| `FORCE_NO_STREAM` | `1` | Paksa `stream:false` di proxy untuk keandalan (`0` = izinkan streaming SSE) |
 | `ALLOW_ORIGIN` | `*` | Origin yang diizinkan untuk CORS |
 | `USE_SSE` | `1` | Mode streaming (`1` = stream, `0` = JSON biasa) |
 | `MODELS_TTL` | `300` | TTL (detik) cache daftar model di `/api/models` |

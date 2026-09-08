@@ -12,6 +12,25 @@ const UPSTREAMS = UPSTREAM.split(',').map(function (u) { return u.trim(); }).fil
 function pickTransport(url) { return url.startsWith('https://') ? https : http; }
 const API_KEY = process.env.API_KEY || '';
 const USE_SSE = String(process.env.USE_SSE || '1');
+// Mode proxy: default selalu `stream:false` (JSON biasa) demi keandalan dengan
+// model gratis Zen. Bisa diubah via env bila upstream pendukung SSE stabil.
+const FORCE_NO_STREAM = String(process.env.FORCE_NO_STREAM || '1');
+// Session ID untuk free tier Zen (OpenCode): tanpa header ini, model gratis
+// ditolak dengan "MissingSessionID". Dipakai bergiliran dari satu pool agar
+// kuota harian tiap sesi tidak cepat habis; override via env bila perlu.
+const SESSION_POOL_SIZE = Number(process.env.SESSION_POOL_SIZE || 16);
+function makeSessionId(seed) {
+  return 'marbelai-' + seed + '-' + Math.random().toString(36).slice(2, 10);
+}
+const SESSION_POOL = Array.from({ length: SESSION_POOL_SIZE }, function (_, i) {
+  return makeSessionId(i);
+});
+let sessionCursor = 0;
+function pickSessionId() {
+  const id = SESSION_POOL[sessionCursor % SESSION_POOL.length];
+  sessionCursor++;
+  return id;
+}
 // Allow cross-origin calls (e.g. the GitHub Pages statically-served UI) to reach
 // this backend's /api/chat. Restrict with a specific origin for production if desired.
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || '*';
@@ -25,7 +44,7 @@ const ROOT = __dirname;
 const CORS_HEADERS = {
   'access-control-allow-origin': ALLOW_ORIGIN,
   'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'Content-Type, Authorization',
+  'access-control-allow-headers': 'Content-Type, Authorization, X-Session-ID',
 };
 
 // Header keamanan dasar yang dipasang di semua respons (statis & API).
@@ -83,8 +102,9 @@ function proxyOpenAI(req, res) {
       catch (e) { res.writeHead(400, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'Invalid JSON body' } })); return resolve(); }
 
       // Model wajib bagi upstream: isi default bila klien tidak mengirim/kosong.
+
       if (!payload.model || typeof payload.model !== 'string' || !payload.model.trim()) {
-        payload.model = process.env.DEFAULT_MODEL || 'mimo-v2.5-free';
+        payload.model = process.env.DEFAULT_MODEL || 'ling-3.0-flash-fin-free';
       }
       const isStream = USE_SSE === '1';
       const clientAuth = req.headers.authorization || '';
@@ -92,10 +112,23 @@ function proxyOpenAI(req, res) {
       const headers = {
         'content-type': 'application/json',
         'accept': isStream ? 'text/event-stream' : (req.headers.accept || 'application/json'),
+        'x-session-id': req.headers['x-session-id'] || pickSessionId(),
       };
       if (authHeader) headers.authorization = authHeader;
 
+      // Jika klien tidak meminta streaming, paksa JSON biasa (default). Bila klien
+      // mengirim `stream:true` eksplisit, biarkan sesuai permintaan.
+
+      if (payload.stream === undefined && isStream) {
+        payload.stream = FORCE_NO_STREAM !== '1';
+      }
+
       // Coba tiap upstream berurutan: yang pertama berhasil dipakai.
+
+      // Nemotron-Nemotron & model ringan lain suka lambat di Zen (kadang >30s).
+      // Panjang timeout membuat respons lambat tetap bisa lolos tanpa gagal di
+      // mode auto; di sisi klien, failover paralel tetap memilih yang tercepat.
+
       const tryUpstream = function (idx) {
         const base = UPSTREAMS[idx];
         if (!base) {
@@ -106,12 +139,18 @@ function proxyOpenAI(req, res) {
           return resolve();
         }
         let upstreamReq = null;
+
+
+        // Zen terkadang menjawab >30s untuk model gratis tertentu. Panjang timeout
+        // ini feksibel: ia naik 2x per upstream cadangan, maksimum 120s.
+        // Client side (app.js) punya timeout sendiri yang lebih pendek supaya
+        // mode auto tidak menunggu lama.
         const upstreamTimeout = setTimeout(() => {
-          if (upstreamReq) upstreamReq.destroy(new Error('upstream timeout'));
-        }, 30000);
+          if (upstreamReq ) upstreamReq.destroy(new Error('upstream timeout'));
+        }, Math.min(120000, (60000 * (idx + 1))));
         upstreamReq = pickTransport(base).request(
           base + '/v1/chat/completions',
-          { method: 'POST', headers },
+          { method: 'POST', headers, timeout: 120000 },
           (upRes) => {
             clearTimeout(upstreamTimeout);
             const target = res;
