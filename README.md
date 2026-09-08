@@ -2,7 +2,7 @@
 
 # Marbel AI
 
-Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 4 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
+Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 2 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
 
 **Link:**
 - [Demo](https://antono4.github.io/MarbelAIv2.1/)
@@ -28,15 +28,14 @@ pada 2026-09-08 terhadap zen.opencode.ai (dengan `X-Session-ID`):
 | Model | Status |
 |---|---|
 | `ling-3.0-flash-fin-free` | Cepat dan stabil (prioritas utama) |
-| `mimo-v2.5-free` | Populer,sering rate-limit (429) |
-| `nemotron-3-ultra-free` | Tersedia,tapi lambat (20-60s) dan kadang overload |
-| `big-pickle` | Model cadangan eksperimental |
+| `nemotron-3-ultra-free` | Aktif,tapi kadang lambat (20-60s) — cadangan paralel |
 
-> **Catatan:** `laguna-s-2.1-free` sudah tidak didukung upstream
-> (ModelError); `deepseek-v4-flash-free` dan `muse-spark-*-contributor-free`
-> sedang unavailable/error (500/400); `nemotron-3.5-lightning-free` timeout
-> >30-60s — kelima model ini dikeluarkan dari daftar agar UI tidak
-> menampilkan model mati.
+> **Catatan (per 2026-09-08):** `mimo-v2.5-free` dan `big-pickle`
+> sering rate-limit (429/503) sehingga dinonaktifkan; `laguna-s-2.1-free`
+> sudah tidak didukung (ModelError); `deepseek-v4-flash-free` dan
+> `muse-spark-*-contributor-free` unavailable/error (500/400);
+> `nemotron-3.5-lightning-free` timeout (>30-60s) — semua model
+> bermasalah ini dikeluarkan agar UI hanya menampilkan model aktif.
 
 ## Menjalankan Secara Lokal
 
