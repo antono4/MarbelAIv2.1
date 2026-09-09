@@ -242,17 +242,55 @@ const FREE_MODELS = [
   'gemini-2.5-flash', 'deepseek-chat', 'grok-4',
 ];
 
+const AI_TIMEOUT_MS = 60000;
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise(function (resolveTimeout) {
+      setTimeout(function () {
+        const msg = 'Waktu tunggu habis (' + Math.round(ms / 1000) + ' detik). Silakan coba lagi.';
+        resolveTimeout(new Error(msg));
+      }, ms);
+    }),
+  ]);
+}
+async function* guardedStream(iterable, ms) {
+  const it = iterable[Symbol.asyncIterator]();
+  while (true) {
+    const { value, done } = await withTimeout(it.next(), ms);
+    if (done) break;
+    yield value;
+  }
+}
+async function ensurePuter(timeoutMs) {
+  const start = Date.now();
+  while (!(window.puter && window.puter.ai)) {
+    if (Date.now() - start > timeoutMs) throw new Error('SDK Puter gagal dimuat. Muat ulang halaman.');
+    await new Promise(function (r) { setTimeout(r, 100); });
+  }
+}
 async function puterChat(messages, model) {
-  const resp = await puter.ai.chat(messages, { model: model, stream: true });
+  await ensurePuter(8000);
   let full = '';
-  for await (const part of resp) {
-    if (part?.text) full += part.text;
+  let resp;
+  try {
+    resp = await withTimeout(puter.ai.chat(messages, { model: model, stream: true }), AI_TIMEOUT_MS);
+  } catch (err) {
+    throw new Error(err.message || 'Puter gagal merespons');
   }
-  if (!full) {
-    throw new Error('Upstream mengembalikan respons kosong (model tanpa isi)');
+  try {
+    for await (const part of guardedStream(resp)) {
+      if (part?.text) full += part.text;
+    }
+  } catch (err) {
+    const direct = (resp && resp.message && resp.message.content) || (resp && resp.text) || (typeof resp === 'string' ? resp : '');
+    if (direct) full = String(direct);
+    else throw new Error(err.message || 'Stream Puter gagal.');
   }
+  if (!full) throw new Error('Upstream mengembalikan respons kosong (model tanpa isi)');
   return full;
 }
+
 
   // Ulangi operasi sampai berhasil memberikan respons (kesalahan server/jaringan).
   // Jeda antar percobaan bertingkat: 1s, 2s, 3s… maksimum 5 detik.
