@@ -252,6 +252,18 @@
     'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free',
   ];
 
+  let clientSessionCursor = 0;
+  function clientSessionId() {
+    let id = null;
+    try { id = sessionStorage.getItem('marbel-session'); } catch (e) {}
+    if (!id) {
+      id = 'marbelai-c' + Math.random().toString(36).slice(2, 10);
+      try { sessionStorage.setItem('marbel-session', id); } catch (e) {}
+    }
+    clientSessionCursor++;
+    return id + '-' + clientSessionCursor;
+  }
+
   function apiBase() {
     if (!isGitHubPages) return '';
     return backendInUse;
@@ -299,7 +311,7 @@
     const fullText = await retryUntilResponse(async function () {
       const res = await fetch(api('/api/chat'), {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'x-session-id': clientSessionId() },
         body: JSON.stringify({ model: modelId, messages, stream: false })
       });
 
@@ -346,7 +358,7 @@
     return retryUntilResponse(function () {
       return fetch(api('/api/chat'), {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'x-session-id': clientSessionId() },
         body: JSON.stringify({ model: modelId, messages, stream: false })
       }).then(async function (res) {
         if (!res.ok) {
