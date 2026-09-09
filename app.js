@@ -157,9 +157,14 @@
     if (!current) return;
 
     // Temukan index pesan assistant yang sedang diperbarui.
-    const itemIdx = rawText != null
-      ? current.items.findIndex(function (i) { return i.role === 'assistant' && i.content === rawText; })
-      : -1;
+    let itemIdx = -1;
+    if (rawText != null) {
+      itemIdx = current.items.findIndex(function (i) { return i.role === 'assistant' && i.content === rawText; });
+    } else {
+      for (let i = current.items.length - 1; i >= 0; i--) {
+        if (current.items[i].role === 'assistant') { itemIdx = i; break; }
+      }
+    }
 
     const lastUserMsg = (function () {
       for (let i = current.items.length - 1; i >= 0; i--) {
@@ -256,15 +261,15 @@
   // Ulangi operasi sampai berhasil memberikan respons (kesalahan server/jaringan).
   // Jeda antar percobaan bertingkat: 1s, 2s, 3s… maksimum 5 detik.
   async function retryUntilResponse(fn, label) {
-    let attempt = 0;
-    for (;;) {
+    for (let attempt2 = 0; attempt2 < 3; attempt2++) {
       try {
         return await fn();
       } catch (err) {
-        attempt++;
-        const delay = Math.min(attempt, 5) * 1000;
+        attempt2++;
+        if (attempt2 >= 3) throw err;
+        const delay = Math.min(attempt2, 5) * 1000;
         setStatusIcon('err');
-        if (label) console.warn('[retry] ' + label + ' percobaan ke-' + attempt + ':', err.message);
+        if (label) console.warn('[retry] ' + label + ' percobaan ke-' + attempt2 + ':', err.message);
         await new Promise(function (r) { setTimeout(r, delay); });
         setStatusIcon('on');
       }
@@ -409,24 +414,48 @@
     }(1));
   }
 
+  function isNetworkError(err) {
+    return err instanceof TypeError;
+  }
+
   async function chatAnswer(messages, selected, onChunk) {
-    // Selalu jalankan SEMUA model paralel; jawaban lengkap tercepat yang ditampilkan.
-    // Pilihan di dropdown hanya menentukan model mana yang dicoba lebih dulu di daftar,
-    // tapi semua tetap berlomba.
     const order = resolveModelOrder(selected);
-    const jobs = order.map(function (m) {
-      return runOneModel(m, messages).then(function (content) { return { modelId: m, content: content }; });
-    });
-    const first = await firstFulfilled(jobs);
+    let first = null;
+    if (selected === 'semua') {
+      // Mode auto: jalankan SEMUA model paralel, jawaban lengkap tercepat yang menang.
+
+
+      const jobs = order.map(function (m) {
+        return runOneModel(m, messages).then(function (content) { return { modelId: m, content: content }; });
+      });
+      first = await firstFulfilled(jobs);
+    } else {
+      // Mode single: coba model pilihan dulu,, lalu failover berurutan ke cadangan
+      // saat error 4xx/5xx/rate-limit/upstream. Error non-HTTP (NetworkError)
+      // langsung gagal tanpa coba cadangan.
+
+
+
+      for (let i = 0; i < order.length; i++) {
+        const m = order[i];
+        try {
+          first = { modelId: m, content: await runOneModel(m, messages) };
+          break;
+        } catch (err) {
+          if (isNetworkError(err)) throw err;
+          if (i === order.length - 1) throw err;
+        }
+      }
+    }
     await typeOut(first.content, function (p) { if (onChunk) onChunk(p, first.modelId); });
     return { content: first.content, modelId: first.modelId };
   }
 
   function buildThreadHistory() {
-    const msgs = history.flatMap(function (h) {
-      return h.items.map(function (i) {
-        return { role: i.role, content: i.content };
-      });
+    const th = history.find(function (h) { return h.id === threadId; });
+    if (!th) return [{ role: 'system', content: 'Kamu adalah Marbel AI. Saat ditanya siapa kamu, jawab sebagai Marbel AI. Jawab dengan bahasa Indonesia. Jangan gunakan tabel Markdown, jangan gunakan karakter "|", "---", atau "*". Balas ringkas, jelas, dan tanpa hiasan berlebihan.' }];
+    const msgs = th.items.map(function (i) {
+      return { role: i.role, content: i.content };
     });
     msgs.unshift({
       role: 'system',
