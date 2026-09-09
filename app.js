@@ -235,41 +235,24 @@
     welcomeEl.style.display = 'none';
   }
 
-  // Konfigurasi Backend
-  const DEFAULT_BACKEND = 'https://work-1-skknbirvnnxsbuhv.prod-runtime.all-hands.dev';
-  const FALLBACK_BACKEND = 'https://work-2-skknbirvnnxsbuhv.prod-runtime.all-hands.dev';
-  const override = new URLSearchParams(window.location.search).get('backend');
-  let backendInUse = override || DEFAULT_BACKEND;
-  const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
+// Konfigurasi Model (sumber: MiniDevin — via Puter.js, tanpa backend/API key.
+// Model dijalankan langsung dari browser lewat SDK Puter.
+const FREE_MODELS = [
+  'gpt-5-nano', 'gpt-4o-mini', 'claude-sonnet-4',
+  'gemini-2.5-flash', 'deepseek-chat', 'grok-4',
+];
 
-  const FREE_MODELS = [
-    // Hanya model yang benar-benar aktif & stabil per 2026-09-09 (dites
-    // langsung ke zen.opencode.ai dengan header X-Session-ID).
-    // ling: cepat/stabil (prioritas utama). nemotron: aktif, kadang lambat/
-    // 502 — cadangan. big-pickle: aktif, tapi gampang rate-limit — dipakai
-    // sebagai opsi manual (urutan paling akhir agar tidak merebut mode auto).
-    // mimo/deepseek/muse/laguna/nemotron-3.5 sudah nonaktif/error.
-
-    'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free', 'big-pickle',
-  ];
-
-  let clientSessionCursor = 0;
-  function clientSessionId() {
-    let id = null;
-    try { id = sessionStorage.getItem('marbel-session'); } catch (e) {}
-    if (!id) {
-      id = 'marbelai-c' + Math.random().toString(36).slice(2, 10);
-      try { sessionStorage.setItem('marbel-session', id); } catch (e) {}
-    }
-    clientSessionCursor++;
-    return id + '-' + clientSessionCursor;
+async function puterChat(messages, model) {
+  const resp = await puter.ai.chat(messages, { model: model, stream: true });
+  let full = '';
+  for await (const part of resp) {
+    if (part?.text) full += part.text;
   }
-
-  function apiBase() {
-    if (!isGitHubPages) return '';
-    return backendInUse;
+  if (!full) {
+    throw new Error('Upstream mengembalikan respons kosong (model tanpa isi)');
   }
-  const api = function (path) { return apiBase() + path; };
+  return full;
+}
 
   // Ulangi operasi sampai berhasil memberikan respons (kesalahan server/jaringan).
   // Jeda antar percobaan bertingkat: 1s, 2s, 3s… maksimum 5 detik.
@@ -286,18 +269,9 @@
         await new Promise(function (r) { setTimeout(r, delay); });
         setStatusIcon('on');
       }
-    }
+  }
   }
 
-  async function ensureBackend() {
-    if (backendInUse !== FALLBACK_BACKEND) {
-      try {
-        const res = await fetch(backendInUse + '/api/models', { method: 'GET', headers: { accept: 'application/json' } });
-        if (res.ok) return;
-      } catch (e) {}
-      backendInUse = FALLBACK_BACKEND;
-    }
-  }
 
   // ==================== Modul chat (streaming & ensemble) ====================
   // Semua fungsi memakai `stream:false` (JSON biasa) untuk keandalan dengan
@@ -307,81 +281,26 @@
   // Kirim ke 1 model, tunggu jawaban lengkap, lalu beri efek mengetik.
   // Kesalahan server/jaringan diulang otomatis sampai dapat respons.
   async function streamChat(modelId, messages, onChunk) {
-    setStatus('on', 'mencoba model: ' + modelId + '…');
-
-    const fullText = await retryUntilResponse(async function () {
-      const res = await fetch(api('/api/chat'), {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-session-id': clientSessionId() },
-        body: JSON.stringify({ model: modelId, messages, stream: false })
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        // 429 = rate-limit: langsung lewati model ini (jangan tunggu retry lama).
-        if (res.status === 429) throw new Error('Rate limit (429): lewati ' + modelId);
-        throw new Error('HTTP ' + res.status + ': ' + errText.slice(0, 100));
-      }
-
-      let data;
-      try { data = await res.json(); }
-      catch (e) { throw new Error('Upstream mengembalikan respons yang bukan JSON.'); }
-
-      if (data.error) {
-        throw new Error((data.error.message || 'HTTP ' + res.status) + ' (upstream error)');
-      }
-
-      let text = '';
-      if (data.choices && data.choices[0]) {
-        const c = data.choices[0].message || {};
-        text = c.content || c.reasoning_content || '';
-      }
-
-      if (!text) {
-        throw new Error('Upstream mengembalikan respons kosong (model tanpa isi)');
-      }
-      return text;
-    }, 'chat ' + modelId);
-
-    const words = fullText.split(' ');
-    for (let i = 1; i <= words.length; i++) {
-      const partial = words.slice(0, i).join(' ');
-      if (onChunk) onChunk(partial, modelId);
-      await new Promise(function (r) { setTimeout(r, 16); });
-    }
-    return fullText;
+  setStatus('on', 'mencoba model: ' + modelId + '…');
+  const fullText = await retryUntilResponse(function () {
+    return puterChat(messages, modelId);
+  }, 'chat ' + modelId);
+  const words = fullText.split(' ');
+  for (let i = 1; i <= words.length; i++) {
+    const partial = words.slice(0, i).join(' ');
+    if (onChunk) onChunk(partial, modelId);
+    await new Promise(function (r) { setTimeout(r, 16); });
   }
-
+  return fullText;
+}
   // Ambil jawaban lengkap dari 1 model (tanpa efek mengetik). Dipakai ensemble paralel.
   // Kesalahan diulang otomatis sampai model ini memberikan respons.
-  function runOneModel(modelId, messages) {
-    setStatus('on', 'menghubungi ' + modelId + '…');
-    return retryUntilResponse(function () {
-      return fetch(api('/api/chat'), {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-session-id': clientSessionId() },
-        body: JSON.stringify({ model: modelId, messages, stream: false })
-      }).then(async function (res) {
-        if (!res.ok) {
-          const t = await res.text();
-          // 429 = rate-limit: langsung lewati model ini (jangan tunggu retry lama).
-          if (res.status === 429) throw new Error('Rate limit (429): lewati ' + modelId);
-          throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 100));
-        }
-        return res.json();
-      }).then(function (data) {
-        if (data.error) throw new Error((data.error.message || 'respons error') + ' (upstream)');
-        let content = '';
-        if (data.choices && data.choices[0]) {
-          const c = data.choices[0].message || {};
-          content = c.content || c.reasoning_content || '';
-        }
-        if (!content) throw new Error('Upstream mengembalikan respons kosong');
-        return content;
-      });
-    }, 'ensemble ' + modelId);
-  }
-
+function runOneModel(modelId, messages) {
+  setStatus('on', 'menghubungi ' + modelId + '…');
+  return retryUntilResponse(function () {
+    return puterChat(messages, modelId);
+  }, 'ensemble ' + modelId);
+}
   // Resolve dengan nilai pertama yang sukses di antara banyak Promise.
   // Semua model dijalankan paralel; yang paling cepat selesai & berhasil yang menang.
   function firstFulfilled(promises) {
@@ -683,29 +602,11 @@
     model.value = 'semua';
   }
 
-  function loadModels() {
-    Promise.resolve(isGitHubPages ? ensureBackend() : null)
-      .then(function () { return fetch(api('/api/models')); })
-      .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        let all = (data.data || []).map(function (m) { return m.id; });
-        const candidates = FREE_MODELS;
-        candidates.forEach(function (id) {
-          if (all.indexOf(id) === -1) all.push(id);
-        });
-        const ready = candidates.filter(function (id) { return all.indexOf(id) !== -1; });
-        renderModelNames(ready, ready);
-        populateModelSelect(ready, ready);
-        setStatus('on', 'terhubung');
-      })
-      .catch(function () {
-        setStatus('err', 'tak tersedia');
-        modelCountEl.textContent = 'gagal memuat';
-      });
-  }
+function loadModels() {
+  renderModelNames(FREE_MODELS, FREE_MODELS);
+  populateModelSelect(FREE_MODELS, FREE_MODELS);
+  setStatus('on', 'terhubung');
+}
 
   newThread();
   loadModels();
