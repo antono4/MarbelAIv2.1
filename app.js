@@ -236,21 +236,34 @@
   }
 
   // Konfigurasi Backend
-  const DEFAULT_BACKEND = 'https://marbel-ai.onrender.com';
-  const FALLBACK_BACKEND = 'https://marbel-ai.onrender.com';
+  const DEFAULT_BACKEND = 'https://work-1-skknbirvnnxsbuhv.prod-runtime.all-hands.dev';
+  const FALLBACK_BACKEND = 'https://work-2-skknbirvnnxsbuhv.prod-runtime.all-hands.dev';
   const override = new URLSearchParams(window.location.search).get('backend');
   let backendInUse = override || DEFAULT_BACKEND;
   const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
 
   const FREE_MODELS = [
-    // Hanya model yang benar-benar aktif & stabil per 2026-09-08 (dites
+    // Hanya model yang benar-benar aktif & stabil per 2026-09-09 (dites
     // langsung ke zen.opencode.ai dengan header X-Session-ID).
-    // Mulai 2026-09-08: mimo-v2.5-free & big-pickle sering rate-limit
-    // (429/503) — nonaktif; laguna/deepseek/muse/nemotron-3.5 sudah
-    // mati/tidak didukung. Cukup dua ini: ling (cepat/stabil) dan
-    // nemotron-3-ultra (aktif, kadang lambat — cadangan paralel).
-    'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free',
+    // ling: cepat/stabil (prioritas utama). nemotron: aktif, kadang lambat/
+    // 502 — cadangan. big-pickle: aktif, tapi gampang rate-limit — dipakai
+    // sebagai opsi manual (urutan paling akhir agar tidak merebut mode auto).
+    // mimo/deepseek/muse/laguna/nemotron-3.5 sudah nonaktif/error.
+
+    'ling-3.0-flash-fin-free', 'nemotron-3-ultra-free', 'big-pickle',
   ];
+
+  let clientSessionCursor = 0;
+  function clientSessionId() {
+    let id = null;
+    try { id = sessionStorage.getItem('marbel-session'); } catch (e) {}
+    if (!id) {
+      id = 'marbelai-c' + Math.random().toString(36).slice(2, 10);
+      try { sessionStorage.setItem('marbel-session', id); } catch (e) {}
+    }
+    clientSessionCursor++;
+    return id + '-' + clientSessionCursor;
+  }
 
   function apiBase() {
     if (!isGitHubPages) return '';
@@ -299,7 +312,7 @@
     const fullText = await retryUntilResponse(async function () {
       const res = await fetch(api('/api/chat'), {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'x-session-id': clientSessionId() },
         body: JSON.stringify({ model: modelId, messages, stream: false })
       });
 
@@ -346,7 +359,7 @@
     return retryUntilResponse(function () {
       return fetch(api('/api/chat'), {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'x-session-id': clientSessionId() },
         body: JSON.stringify({ model: modelId, messages, stream: false })
       }).then(async function (res) {
         if (!res.ok) {

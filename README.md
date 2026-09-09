@@ -97,7 +97,15 @@ Proyek ini mendukung beberapa platform:
 
 - **Render** - gunakan `render.yaml` sebagai Render Blueprint (gratis).
 - **Railway** - gunakan `railway.json` sebagai konfigurasi build atau deploy.
-- **GitHub Pages** - frontend statis berfungsi di GitHub Pages dan backend memakai default `https://marbel-ai.onrender.com` yang bisa di-override dengan parameter query `?backend=URL`.
+- **GitHub Pages** - frontend statis berfungsi di GitHub Pages. Backend default kini menunjuk ke host runtime aktif (lihat `DEFAULT_BACKEND`/`FALLBACK_BACKEND` di `app.js`) dan bisa di-override dengan parameter query `?backend=URL`.
+
+> **Catatan backend:** `https://marbel-ai.onrender.com` yang lama perlu **deploy ulang** agar
+> sinkron dengan `main` saat ini: build lama di Render belum punya header CORS
+> `X-Session-ID` (sehingga browser memblokir chat dari GitHub Pages) dan IP Render
+> sedang terkena rate-limit `FreeUsageLimitError` dari Zen. Setelah di-deploy ulang
+> (push ke Render blueprint atau redeploy manual di dashboard), backend Render bisa
+> dipakai lagi sebagai cadangan permanen — cukup ganti `DEFAULT_BACKEND`/`FALLBACK_BACKEND`
+> di `app.js` atau pakai `?backend=https://marbel-ai.onrender.com`.
 - **Docker** - lihat bagian Docker di atas.
 
 ## Struktur Proyek

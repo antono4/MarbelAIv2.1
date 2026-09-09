@@ -1,0 +1,38 @@
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy (deploy hook)
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+        run: |
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        shell: bash
+
+      - name: Trigger Render deploy (API key)
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' && secrets.RENDER_API_KEY != '' && secrets.RENDER_SERVICE_ID != '' }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys"
+        shell: bash
+
+      - name: Verify backend
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' || (secrets.RENDER_API_KEY != '' && secrets.RENDER_SERVICE_ID != '') }}
+        run: |
+          echo "Deploy dipicu. Periksa dashboard Render untuk progres."
+        shell: bash
+
+      - name: Fail if no Render credentials
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL == '' && (secrets.RENDER_API_KEY == '' || secrets.RENDER_SERVICE_ID == '') }}
+        run: |
+          echo "::error::Tidak ada kredensial Render. Set secret RENDER_DEPLOY_HOOK_URL, atau RENDER_API_KEY + RENDER_SERVICE_ID di repo settings → Secrets and variables → Actions."
+          exit 1
+        shell: bash
