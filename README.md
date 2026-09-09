@@ -2,7 +2,7 @@
 
 # Marbel AI
 
-Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 2 model AI gratis sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
+Chat dengan beragam model AI gratis tanpa akun dan tanpa biaya. Mengobrol dengan 3 model AI gratis yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
 
 **Link:**
 - [Demo](https://antono4.github.io/MarbelAIv2.1/)
