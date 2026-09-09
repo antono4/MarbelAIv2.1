@@ -646,6 +646,27 @@ function loadModels() {
   setStatus('on', 'terhubung');
 }
 
+function hideLowBalanceDialogs() {
+  var scan = function () {
+    var nodes = document.querySelectorAll('dialog, [role="dialog"], .modal, .popup, [class*="dialog"], [class*="modal"]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var txt = (el.textContent || '').toLowerCase();
+      if (txt.indexOf('not enough funding') !== -1 || txt.indexOf('low balance') !== -1 || txt.indexOf('upgrade now') !== -1 || txt.indexOf('upgrade to continue') !== -1) {
+        try { if (el.close && typeof el.close === 'function') el.close(); } catch (e) {}
+        el.style.display = 'none';
+        el.style.visibility = 'hidden';
+        el.remove();
+      }
+    }
+  };
+  scan();
+  if (window.MutationObserver) {
+    new MutationObserver(function () { scan(); }).observe(document.body, { childList: true, subtree: true });
+  }
+}
+
+  hideLowBalanceDialogs();
   newThread();
   loadModels();
 })();
