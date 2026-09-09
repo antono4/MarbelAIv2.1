@@ -637,7 +637,7 @@
       pill.type = 'button';
       pill.className = 'mname' + (active ? ' active' : ' locked');
       pill.textContent = id;
-      pill.title = active ? 'Siap dipakai gratis' : 'Provider belum terhubung';
+      pill.title = active ? 'Siap dipakai' : 'Provider belum terhubung';
       pill.dataset.active = active ? '1' : '0';
       pill.addEventListener('click', function () { setModel(id); });
       modelListEl.appendChild(pill);
