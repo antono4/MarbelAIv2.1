@@ -21,17 +21,19 @@ Chat dengan beragam model AI sekaligus yang saling melengkapi untuk jawaban yang
 .
 - **Cepat dan responsif** - efek mengetik agar terasa ringan.
 
-- **Tanpa biaya & tanpa API key** - semua model gratis (lihat tabel di bawah), disajikan lewat backend proxy `server.js` (OpenCode Zen + Free.ai). Tidak perlu kartu kredit atau akun berbayar.
+- **Tanpa biaya & tanpa API key** - semua model gratis (lihat tabel di bawah), disajikan lewat backend proxy `server.js`. Tidak perlu kartu kredit atau akun berbayar.
 
 - **Siap deploy** - frontend bisa di-host di mana saja; pasang `server.js` di Render, Railway, Docker, atau host kerja (work-1/work-2) sebagai proxy CORS. 
 
-## Model AI (dari [awesome-free-models](https://github.com/12britz/awesome-free-models))
+## Model AI (dari [no-cost-ai](https://github.com/zebbern/no-cost-ai))
 
 Daftar model gratis yang dipakai di `app.js` (`FREE_MODELS`), disajikan lewat backend proxy `server.js`:
 
 | Model | Provider | Keterangan |
 |---|---|---|
-| `nemotron-3.5-lightning-free` | OpenCode Zen | NVIDIA Nemotron ringan, cepat (default) |
+| `qwen3.6-27b` | uncloseai (no-cost-ai) | Qwen 3.6 27B, gratis tanpa API key (default) |
+| `gpt-oss-20b` | pollinations (no-cost-ai) | GPT-OSS 20B open-weights, tier anonim |
+| `nemotron-3.5-lightning-free` | OpenCode Zen | NVIDIA Nemotron ringan, cepat (cadangan) |
 | `big-pickle` | OpenCode Zen | Stealth model, kemampuan bergilir |
 | `ling-3.0-flash-fin-free` | OpenCode Zen | Model cepat untuk chat |
 | `nemotron-3-ultra-free` | OpenCode Zen | Nemotron 3 Ultra, kadang lambat |
@@ -41,7 +43,7 @@ Daftar model gratis yang dipakai di `app.js` (`FREE_MODELS`), disajikan lewat ba
 
 Mode **Auto Model** mencoba semua model di atas secara paralel dan memakai jawaban tercepat yang berhasil. Semua model gratis — tanpa API key, tanpa kartu kredit.
 
-> Catatan: model OpenCode Zen butuh header `X-Session-ID` (otomatis dirotasi pool oleh `server.js`). Saat Zen rate-limit (429) atau lambat, server otomatis failover ke Free.ai.
+> Catatan: provider uncloseai (hermes/qwen) memakai vLLM/Qwen; server mengirim `chat_template_kwargs.enable_thinking=false` agar jawaban bersih tanpa proses berpikir. Saat uncloseai/pollinations rate-limit atau lambat, server otomatis failover ke Zen lalu Free.ai.
 
 
 
@@ -59,7 +61,7 @@ cd MarbelAIv2.1
 PORT=12000 node server.js
 ```
 
-Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus menjadi **proxy CORS** ke provider model gratis (OpenCode Zen + Free.ai) di `/api/chat`. Buka `http://localhost:12000` di browser lalu kirim pesan — tidak perlu login atau API key.
+Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus menjadi **proxy CORS** ke provider model gratis (dari daftar no-cost-ai) di `/api/chat`. Buka `http://localhost:12000` di browser lalu kirim pesan — tidak perlu login atau API key.
 
 > Untuk GitHub Pages (statis murni), tambahkan `?frontend=<URL backend>` atau atur `DEFAULT_BACKEND` di `app.js` agar UI menunjuk ke instance `server.js` yang sedang berjalan (mis. Render). Tanpa backend, SDK Puter dipakai sebagai cadangan bila `puter.ai` tersedia.
 
@@ -73,9 +75,9 @@ Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus m
 | Variabel | Default | Deskripsi |
 |---|---|---|
 | `PORT` | `12000` | Port HTTP server |
-| `UPSTREAM` | `https://opencode.ai/zen,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
+| `UPSTREAM` | `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
 | `UPSTREAM_PREFIX` | `''` | Prefix path upstream (untuk Zen cukup set base, otomatis `/v1`) |
-| `DEFAULT_MODEL` | `nemotron-3.5-lightning-free` | Model default bila klien tidak mengirim |
+| `DEFAULT_MODEL` | `qwen3.6-27b` | Model default bila klien tidak mengirim |
 | `MODELS_LIST` | daftar model gratis | Daftar model yang dilayani `/api/models` |
 | `SESSION_POOL_SIZE` | `16` | Ukuran pool `X-Session-ID` untuk Zen |
 | `API_KEY` | `''` | Opsional, dipakai bila upstream butuh Bearer |

@@ -4,17 +4,54 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = Number(process.env.PORT) || 12000;
-// Upstream OpenAI-compatible. Default: OpenCode Zen (https://opencode.ai/zen) —
-// menyediakan model gratis tanpa API key, cukup header X-Session-ID.
-// Fallback kedua: freeapi (api.free.ai) menyediakan beberapa model open-weight
-// gratis tanpa API key (mis. qwen7b, qwen3-8b) dan membantu saat Zen rate-limit.
-const UPSTREAM = process.env.UPSTREAM || 'https://opencode.ai/zen,https://api.free.ai';
+// Upstream OpenAI-compatible — model gratis dari daftar no-cost-ai
+// (https://github.com/zebbern/no-cost-ai), tanpa API key:
+//  1. uncloseai  (hermes.ai.unturf.com + qwen.ai.unturf.com) — Qwen 3.6 27B, bebas biaya.
+//  2. pollinations (text.pollinations.ai) — GPT-OSS 20B, tier anonim.
+// Cadangan tetap: OpenCode Zen (opencode.ai/zen, butuh X-Session-ID) dan
+// freeapi (api.free.ai, model open-weight gratis).
+const UPSTREAM = process.env.UPSTREAM || 'https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai';
 // Pemetaan model per upstream: saat failover tiba di upstream berikutnya,
 // model yang tak dikenal di sana dipetakan ke model yang tersedia.
-// Gunanya: Zen model (mis. nemotron-3.5-lightning-free) tidak ada di
-// api.free.ai — peta ke qwen7b agar failover tetap menghasilkan jawaban.
+// Gunanya: model UI (mis. qwen3.6-27b) tidak ada di provider lain — peta ke
+// model yang tersedia di sana agar failover tetap menghasilkan jawaban.
 const UPSTREAM_MODEL_MAP = {
+  'https://hermes.ai.unturf.com': {
+    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+  },
+  'https://qwen.ai.unturf.com': {
+    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+  },
+  'https://text.pollinations.ai': {
+    'qwen3.6-27b': 'openai',
+    'gpt-oss-20b': 'openai',
+    'nemotron-3.5-lightning-free': 'openai',
+    'big-pickle': 'openai',
+    'ling-3.0-flash-fin-free': 'openai',
+    'nemotron-3-ultra-free': 'openai',
+    'mimo-v2.5-free': 'openai',
+    'qwen7b': 'openai',
+    'qwen3-8b': 'openai',
+  },
   'https://api.free.ai': {
+    'qwen3.6-27b': 'qwen7b',
+    'gpt-oss-20b': 'qwen7b',
     'nemotron-3.5-lightning-free': 'qwen7b',
     'big-pickle': 'qwen7b',
     'ling-3.0-flash-fin-free': 'qwen7b',
@@ -24,9 +61,19 @@ const UPSTREAM_MODEL_MAP = {
     'qwen3-8b': 'qwen3-8b',
   },
   'https://opencode.ai/zen': {
+    'qwen3.6-27b': 'nemotron-3.5-lightning-free',
+    'gpt-oss-20b': 'nemotron-3.5-lightning-free',
     'qwen7b': 'nemotron-3.5-lightning-free',
     'qwen3-8b': 'nemotron-3.5-lightning-free',
   },
+};
+// Payload tambahan per upstream (dipakai agar model memberi jawaban bersih):
+// uncloseai memakai vLLM/Qwen yang andai berpikir, menaruh proses berpikir di
+// dalam `content`. Setel `enable_thinking:false` supaya jawaban tidak dicampur
+// proses berpikir.
+const UPSTREAM_PAYLOAD = {
+  'https://hermes.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
+  'https://qwen.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
 };
 // Path prefix upstream. Zen menaruh API di `/zen/v1/...`, sehingga saat
 // UPSTREAM hanya host (`https://opencode.ai`), set UPSTREAM_PREFIX='/zen'.
@@ -76,10 +123,11 @@ const MODELS_TTL = Number(process.env.MODELS_TTL || 300); // detik
 let modelsCache = null;
 let modelsCacheAt = 0;
 
-// Daftar model gratis (dari awesome-free-models) yang diizinkan lewat proxy.
-// Hanya model yang sudah terverifikasi aktif via Zen / Free.ai pada 2026-09.
+// Daftar model gratis (dari no-cost-ai) yang diizinkan lewat proxy.
+// qwen3.6-27b & gpt-oss-20b dari uncloseai/pollinations (no-cost-ai);
+// model Zen/Free.ai tetap dipakai sebagai cadangan saat failover.
 const DEFAULT_MODELS = (
-  process.env.MODELS_LIST || 'big-pickle,nemotron-3.5-lightning-free,nemotron-3-ultra-free,ling-3.0-flash-fin-free,mimo-v2.5-free,muse-spark-1.3-contributor-free,qwen7b,qwen3-8b'
+  process.env.MODELS_LIST || 'qwen3.6-27b,gpt-oss-20b,nemotron-3.5-lightning-free,big-pickle,ling-3.0-flash-fin-free,nemotron-3-ultra-free,mimo-v2.5-free,qwen7b,qwen3-8b'
 ).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 
 const ROOT = __dirname;
@@ -147,7 +195,7 @@ function proxyOpenAI(req, res) {
       // Model wajib bagi upstream: isi default bila klien tidak mengirim/kosong.
 
       if (!payload.model || typeof payload.model !== 'string' || !payload.model.trim()) {
-        payload.model = process.env.DEFAULT_MODEL || 'nemotron-3.5-lightning-free';
+        payload.model = process.env.DEFAULT_MODEL || 'qwen3.6-27b';
       }
       const isStream = USE_SSE === '1';
       const clientAuth = req.headers.authorization || '';
@@ -256,7 +304,10 @@ function proxyOpenAI(req, res) {
           failover();
         });
         upstreamReq.on('timeout', () => upstreamReq.destroy(new Error('upstream timeout')));
-        const outPayload = Object.assign({}, payload, { model: sendModel });
+        // Salinan payload khusus upstream: model yang dipetakan + parameter
+        // tambahan (mis. enable_thinking:false untuk uncloseai).
+        const upExtra = UPSTREAM_PAYLOAD[base] || {};
+        const outPayload = Object.assign({}, payload, upExtra, { model: sendModel });
         upstreamReq.write(JSON.stringify(outPayload));
         upstreamReq.end();
       };
