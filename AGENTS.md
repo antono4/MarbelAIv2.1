@@ -6,6 +6,22 @@
 PORT=12000 node server.js
 ```
 
+### Menjalankan backend work-1/work-2 dengan auto-restart
+
+Environment ini menyajikan UI lewat proxy `work-1` (port 12000) & `work-2` (port 12001) di `*.prod-runtime.all-hands.dev`. Tanpa `server.js` di port tersebut, proxy mengembalikan 502 dan UI menampilkan "Backend: Failed to fetch".
+
+Gunakan launcher dengan auto-restart (detached dari sesi shell):
+
+```bash
+./start-servers.sh           # jalankan port 12000 & 12001 + auto-restart
+./start-servers.sh status    # cek status
+./start-servers.sh stop      # hentikan semua
+```
+
+- Log setiap server: `/tmp/marbel-logs/server-<port>.log`.
+- Launcher otomatis me-restart server bila proses crash (PID berubah).
+- Port khusus: `./start-servers.sh 7000 8000` (override PORT per instance).
+
 Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus jadi **proxy CORS** ke provider model gratis. Tidak ada dependency npm (hanya modul inti Node).
 
 ## Model AI (sumber: no-cost-ai + uncloseai + pollinations + Zen + Free.ai)
