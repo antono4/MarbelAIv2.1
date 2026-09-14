@@ -13,14 +13,18 @@ Environment ini menyajikan UI lewat proxy `work-1` (port 12000) & `work-2` (port
 Gunakan launcher dengan auto-restart (detached dari sesi shell):
 
 ```bash
-./start-servers.sh           # jalankan port 12000 & 12001 + auto-restart
+./start-servers.sh           # jalankan port 12000 & 12001 + auto-restart (foreground)
+./start-servers.sh ensure    # pastikan server hidup; start di background bila belum
+./start-servers.sh watchdog  # sekali jalan: pastikan server hidup, lalu keluar
 ./start-servers.sh status    # cek status
-./start-servers.sh stop      # hentikan semua
+./start-servers.sh stop      # hentikan semua (launcher + server)
 ```
 
 - Log setiap server: `/tmp/marbel-logs/server-<port>.log`.
 - Launcher otomatis me-restart server bila proses crash (PID berubah).
 - Port khusus: `./start-servers.sh 7000 8000` (override PORT per instance).
+- Launcher menulis launcher pidfile (`/tmp/marbel-launcher.pid`); instance kedua yang melihat launcher hidup akan **exit** (tidak menggantung, tidak menimpa pidfile).
+- **Autostart**: `~/.marbelai-autostart.sh` (wire ke `~/.profile`) memanggil `ensure` saat login/runtime, dengan auto-detect path proyek (`$MARBEL_PROJECT_DIR` > `~/project` > `/workspace/project`).
 
 Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus jadi **proxy CORS** ke provider model gratis. Tidak ada dependency npm (hanya modul inti Node).
 
