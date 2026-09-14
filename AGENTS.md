@@ -6,11 +6,11 @@
 PORT=12000 node server.js
 ```
 
-### Menjalankan backend work-1/work-2 dengan auto-restart
+### Backend lokal (opsional, untuk mode `?frontend=` atau host lain)
 
-Environment ini menyajikan UI lewat proxy `work-1` (port 12000) & `work-2` (port 12001) di `*.prod-runtime.all-hands.dev`. Tanpa `server.js` di port tersebut, proxy mengembalikan 502 dan UI menampilkan "Backend: Failed to fetch".
+`server.js` menyajikan file statis + proxy CORS ke provider model gratis. Tanpa server di proxy host, UI yang menunjuk ke host itu akan gagal.
 
-Gunakan launcher dengan auto-restart (detached dari sesi shell):
+Untuk menjalankan backend lokal dengan auto-restart:
 
 ```bash
 ./start-servers.sh           # jalankan port 12000 & 12001 + auto-restart (foreground)
@@ -26,7 +26,7 @@ Gunakan launcher dengan auto-restart (detached dari sesi shell):
 - Launcher menulis launcher pidfile (`/tmp/marbel-launcher.pid`); instance kedua yang melihat launcher hidup akan **exit** (tidak menggantung, tidak menimpa pidfile).
 - **Autostart**: `~/.marbelai-autostart.sh` (wire ke `~/.profile`) memanggil `ensure` saat login/runtime, dengan auto-detect path proyek (`$MARBEL_PROJECT_DIR` > `~/project` > `/workspace/project`).
 
-Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus jadi **proxy CORS** ke provider model gratis. Tidak ada dependency npm (hanya modul inti Node).
+> **GitHub Pages**: `app.js` **tidak lagi menunjuk host kerja** mana pun. Pada domain `*.github.io`, `modelChat()` memanggil provider yang mendukung CORS (uncloseai hermes/qwen + Free.ai) langsung dari browser — sehingga tanpa backend terpisah dan tetap jalan 24/7. Backend hanya dipakai bila halaman disajikan same-origin oleh `server.js` atau via `?frontend=URL`.
 
 ## Model AI (sumber: no-cost-ai + uncloseai + pollinations + Zen + Free.ai)
 
@@ -42,7 +42,9 @@ Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus j
 - `qwen7b` (Free.ai)
 - `qwen3-8b` (Free.ai)
 
-Model dipanggil via `modelChat()` → `backendChat()` yang `fetch` ke `/api/chat` (proxy server.js).
+Pemanggilan model:
+- **GitHub Pages**: `modelChat()` → `directChat()` memanggil upstream CORS langsung dari browser (failover: `hermes.ai.unturf.com` → `qwen.ai.unturf.com` → `api.free.ai`).
+- **Same-origin / `?frontend=`**: `modelChat()` → `backendChat()` yang `fetch` ke `/api/chat` (proxy server.js).
 
 ## Pola chat (ensemble + fallback)
 
@@ -68,5 +70,5 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 ## Catatan penting
 
 - File sumber memakai gaya penulisan tidak biasa (koma-titik tanpa spasi konsisten). `node -c` valid meskipun tampak aneh; jangan "merapikan" tanpa tes.
-- Untuk GitHub Pages (statis): UI menunjuk backend via `DEFAULT_BACKEND`/`FALLBACK_BACKEND` (host kerja all-hands) atau `?frontend=URL`. Semua model lewat proxy; pastikan backend tersedia.
+- Untuk GitHub Pages (statis): UI memanggil provider CORS langsung (`DIRECT_UPSTREAMS` di `app.js`), tanpa backend. Bisa memakai backend via `?frontend=URL`.
 - Zen kena rate-limit (429) saat banyak request dari satu IP dalam waktu singkat; pool `X-Session-ID` + retry di server mengurangi hal ini.

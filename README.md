@@ -63,7 +63,7 @@ PORT=12000 node server.js
 
 Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus menjadi **proxy CORS** ke provider model gratis (dari daftar no-cost-ai) di `/api/chat`. Buka `http://localhost:12000` di browser lalu kirim pesan — tidak perlu login atau API key.
 
-> Untuk GitHub Pages (statis murni), tambahkan `?frontend=<URL backend>` atau atur `DEFAULT_BACKEND` di `app.js` agar UI menunjuk ke instance `server.js` yang sedang berjalan (mis. Render). Pastikan backend tersedia; tanpa backend, chat tidak dapat berjalan.
+> **GitHub Pages** memakai **mode langsung**: `app.js` memanggil provider yang mendukung CORS (uncloseai & Free.ai) langsung dari browser, sehingga **tanpa backend terpisah** dan tetap berjalan 24/7. Opsional, bisa memakai backend sendiri lewat `?frontend=<URL backend>` (mis. instance Render/Railway).
 
 
 
@@ -116,8 +116,8 @@ Buka `http://localhost:10000`.
 
 Proyek ini mendukung beberapa platform:
 
-- **GitHub Pages** - frontend statis bisa dipakai di GitHub Pages dengan menunjuk ke backend proxy via `?frontend=<URL>` atau `DEFAULT_BACKEND` di `app.js` (lihat [Demo](https://antono4.github.io/MarbelAIv2.1/)).
-- **Render / Railway / Docker** - sajikan sebagai server statis (atau dengan proxy `UPSTREAM` bila perlu)..
+- **GitHub Pages** - frontend statis langsung memanggil provider CORS (uncloseai, Free.ai) dari browser — tanpa backend terpisah, berjalan terus (lihat [Demo](https://antono4.github.io/MarbelAIv2.1/)). Untuk pakai backend proxy sendiri (mis. server.js di Render/Railway), buka dengan `?frontend=<URL>` atau ubah `DEFAULT_BACKEND` di `app.js`.
+- **Render / Railway / Docker** - sajikan sebagai server statis + proxy `UPSTREAM` (bisa jadi backend untuk mode `?frontend=`).
 
 
 
