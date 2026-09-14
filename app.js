@@ -254,14 +254,119 @@ const FREE_MODELS = [
   'qwen3-8b',
 ];
 
+// Konfigurasi model → upstream (dipakai pada mode langsung GitHub Pages).
+// Provider yang menyediakan CORS lintas origin sehingga frontend statis bisa
+// memanggil API-nya langsung dari browser tanpa backend proxy:
+//  - uncloseai (hermes.ai.unturf.com, qwen.ai.unturf.com) — Qwen 3.6 27B, CORS '*' aktif.
+//  - Free.ai (api.free.ai) — model open-weight gratis, CORS origin dibatasi tapi aktif.
+// Model UI dipetakan ke nama model yang dikenal tiap upstream (mirip UPSTREAM_MODEL_MAP server).
+const DIRECT_UPSTREAMS = [
+  'https://hermes.ai.unturf.com',
+  'https://qwen.ai.unturf.com',
+  'https://api.free.ai',
+];
+const DIRECT_PAYLOAD = {
+  'https://hermes.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
+  'https://qwen.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
+  'https://api.free.ai': {},
+};
+const DIRECT_MODEL_MAP = {
+  'https://hermes.ai.unturf.com': {
+    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+  },
+  'https://qwen.ai.unturf.com': {
+    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+  },
+  'https://api.free.ai': {
+    'qwen3.6-27b': 'qwen7b',
+    'gpt-oss-20b': 'qwen7b',
+    'nemotron-3.5-lightning-free': 'qwen7b',
+    'big-pickle': 'qwen7b',
+    'ling-3.0-flash-fin-free': 'qwen7b',
+    'nemotron-3-ultra-free': 'qwen7b',
+    'mimo-v2.5-free': 'qwen7b',
+    'qwen7b': 'qwen7b',
+    'qwen3-8b': 'qwen3-8b',
+  },
+};
+function directChatUrl(base) {
+  const b = base.replace(/\/$/, '');
+  return b + '/v1/chat/completions';
+}
+function directChat(messages, model) {
+  const baseError = [];
+  // Failover berurutan: coba tiap upstream sampai ada yang berhasil.
+  const tryFrom = function (idx) {
+    const base = DIRECT_UPSTREAMS[idx];
+    if (!base) {
+      const joined = '(' + baseError.join(' · ') + ')' || 'Semua upstream gagal.';
+      return Promise.reject(new Error('Langsung: ' + joined));
+    }
+    const url = directChatUrl(base);
+    const upModel = (DIRECT_MODEL_MAP[base] && DIRECT_MODEL_MAP[base][model]) || model;
+    const payload = Object.assign({}, DIRECT_PAYLOAD[base] || {}, {
+      model: upModel,
+      messages: messages,
+      stream: false,
+    });
+    const headers = { 'content-type': 'application/json' };
+    const hardT = withTimeout(fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(payload),
+    }), AI_TIMEOUT_MS);
+    return hardT.then(function (res) {
+      if (!res.ok) {
+        return res.text().then(function (t) {
+          throw new Error('HTTP ' + res.status + (t ? ': ' + t.slice(0, 100) : ''));
+        });
+      }
+      return res.json();
+    }).then(function (data) {
+      if (data && data.error) {
+        throw new Error(data.error.message || data.error || 'Upstream error');
+      }
+      let text = '';
+      if (data && data.choices && data.choices[0]) {
+        const c = data.choices[0].message || {};
+        text = c.content || c.reasoning_content || '';
+      }
+      if (typeof data === 'string') text = data;
+      if (!text) throw new Error('Model tanpa isi');
+      return { text: text, realModel: (data && data.model) || model };
+    }).catch(function (err) {
+      baseError.push(base + ' → ' + err.message);
+      return tryFrom(idx + 1);
+    });
+  };
+  return tryFrom(0);
+}
+
 // Backend proxy.
 //  - Bila halaman disajikan oleh server.js (host kerja/Render/Railway/Docker),
 //    pakai origin yang sama (relative: '' → /api/chat).
-//  - Bila halaman statis di GitHub Pages, arahkan ke backend proxy yang
-//    menjalankan server.js. Bisa dioverride dengan ?frontend=URL.
+//  - Bila halaman statis di GitHub Pages, panggil provider langsung dari
+//    browser (CORS) — tanpa perlu backend terpisah → tetap berjalan 24/7.
+//    Tetap bisa dioverride dengan ?frontend=URL agar memakai proxy sendiri.
 const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
-const DEFAULT_BACKEND = isGitHubPages ? 'https://work-1-loefrhzzykpdimuq.prod-runtime.all-hands.dev' : '';
-const FALLBACK_BACKEND = isGitHubPages ? 'https://work-2-loefrhzzykpdimuq.prod-runtime.all-hands.dev' : '';
+const DEFAULT_BACKEND = '';
+const FALLBACK_BACKEND = '';
 const FRONTEND_OVERRIDE = new URLSearchParams(window.location.search).get('frontend');
 let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
 const api = function (path) { return backendInUse + path; };
@@ -280,14 +385,9 @@ function withTimeout(promise, ms) {
 }
 
 // Pilih backend yang sehat: coba yang aktif, gagal → cadangan.
+// Pada mode langsung (tanpa backend), tidak melakukan apa-apa.
 async function ensureBackend() {
-  if (!isGitHubPages) return; // same-origin selalu dipakai
-  if (backendInUse === FALLBACK_BACKEND) return;
-  try {
-    const res = await fetch(api('/api/models'), { method: 'GET', headers: { accept: 'application/json' } });
-    if (res.ok) return;
-  } catch (e) {}
-  backendInUse = FALLBACK_BACKEND;
+  return;
 }
 
 // Ambil jawaban lengkap dari backend proxy (OpenAI-compatible /api/chat).
@@ -317,15 +417,23 @@ async function backendChat(messages, model) {
   return { text: text, realModel: data.model || model };
 }
 
-// Kembalikan {text, realModel} dari backend proxy.
+// Kembalikan {text, realModel}. Pada GitHub Pages tanpa override frontend,
+// langsung panggil provider (CORS); selain itu lewat backend proxy.
 async function modelChat(messages, model) {
   const errs = [];
-  for (const attempt of [backendChat]) {
+  const attempts = [];
+  const useDirect = isGitHubPages && !FRONTEND_OVERRIDE;
+  if (useDirect) {
+    attempts.push(directChat(messages, model));
+  } else {
+    attempts.push(backendChat(messages, model));
+  }
+  const label = useDirect ? 'Langsung' : 'Backend';
+  for (const attempt of attempts) {
     try {
-      const out = await attempt(messages, model);
-      return out;
+      return await attempt;
     } catch (err) {
-      errs.push('Backend: ' + err.message);
+      errs.push(label + ': ' + err.message);
     }
   }
   throw new Error(errs.join(' · ') || 'Semua jalur gagal.');
