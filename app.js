@@ -260,8 +260,8 @@ const FREE_MODELS = [
 //  - Bila halaman statis di GitHub Pages, arahkan ke backend proxy yang
 //    menjalankan server.js. Bisa dioverride dengan ?frontend=URL.
 const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
-const DEFAULT_BACKEND = isGitHubPages ? 'https://work-1-dkfnjdofwwtfsbdn.prod-runtime.all-hands.dev' : '';
-const FALLBACK_BACKEND = isGitHubPages ? 'https://work-2-dkfnjdofwwtfsbdn.prod-runtime.all-hands.dev' : '';
+const DEFAULT_BACKEND = isGitHubPages ? 'https://work-1-loefrhzzykpdimuq.prod-runtime.all-hands.dev' : '';
+const FALLBACK_BACKEND = isGitHubPages ? 'https://work-2-loefrhzzykpdimuq.prod-runtime.all-hands.dev' : '';
 const FRONTEND_OVERRIDE = new URLSearchParams(window.location.search).get('frontend');
 let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
 const api = function (path) { return backendInUse + path; };
