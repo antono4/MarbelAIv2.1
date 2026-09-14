@@ -4,7 +4,44 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = Number(process.env.PORT) || 12000;
-const UPSTREAM = process.env.UPSTREAM || 'http://localhost:20128';
+// Upstream OpenAI-compatible. Default: OpenCode Zen (https://opencode.ai/zen) —
+// menyediakan model gratis tanpa API key, cukup header X-Session-ID.
+// Fallback kedua: freeapi (api.free.ai) menyediakan beberapa model open-weight
+// gratis tanpa API key (mis. qwen7b, qwen3-8b) dan membantu saat Zen rate-limit.
+const UPSTREAM = process.env.UPSTREAM || 'https://opencode.ai/zen,https://api.free.ai';
+// Pemetaan model per upstream: saat failover tiba di upstream berikutnya,
+// model yang tak dikenal di sana dipetakan ke model yang tersedia.
+// Gunanya: Zen model (mis. nemotron-3.5-lightning-free) tidak ada di
+// api.free.ai — peta ke qwen7b agar failover tetap menghasilkan jawaban.
+const UPSTREAM_MODEL_MAP = {
+  'https://api.free.ai': {
+    'nemotron-3.5-lightning-free': 'qwen7b',
+    'big-pickle': 'qwen7b',
+    'ling-3.0-flash-fin-free': 'qwen7b',
+    'nemotron-3-ultra-free': 'qwen7b',
+    'mimo-v2.5-free': 'qwen7b',
+    'qwen7b': 'qwen7b',
+    'qwen3-8b': 'qwen3-8b',
+  },
+  'https://opencode.ai/zen': {
+    'qwen7b': 'nemotron-3.5-lightning-free',
+    'qwen3-8b': 'nemotron-3.5-lightning-free',
+  },
+};
+// Path prefix upstream. Zen menaruh API di `/zen/v1/...`, sehingga saat
+// UPSTREAM hanya host (`https://opencode.ai`), set UPSTREAM_PREFIX='/zen'.
+const UPSTREAM_PREFIX = process.env.UPSTREAM_PREFIX || '';
+function chatUrl(base) {
+  const b = base.replace(/\/$/, '');
+  // Jika base sudah mengandung '/zen' dan prefix kosong, tambahkan '/v1'.
+  if (!UPSTREAM_PREFIX && /\/zen$/.test(b)) return b + '/v1/chat/completions';
+  return b + UPSTREAM_PREFIX + '/v1/chat/completions';
+}
+function modelsUrl(base) {
+  const b = base.replace(/\/$/, '');
+  if (!UPSTREAM_PREFIX && /\/zen$/.test(b)) return b + '/v1/models';
+  return b + UPSTREAM_PREFIX + '/v1/models';
+}
 // Daftar upstream cadangan, dipisah koma. Server mencoba berurutan: jika
 // UPSTREAM utama gagal (connect/timeout), lanjut ke berikutnya. Ini menambah
 // ketahanan saat satu provider gratis sedang sibuk/down.
@@ -38,6 +75,12 @@ const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || '*';
 const MODELS_TTL = Number(process.env.MODELS_TTL || 300); // detik
 let modelsCache = null;
 let modelsCacheAt = 0;
+
+// Daftar model gratis (dari awesome-free-models) yang diizinkan lewat proxy.
+// Hanya model yang sudah terverifikasi aktif via Zen / Free.ai pada 2026-09.
+const DEFAULT_MODELS = (
+  process.env.MODELS_LIST || 'big-pickle,nemotron-3.5-lightning-free,nemotron-3-ultra-free,ling-3.0-flash-fin-free,mimo-v2.5-free,muse-spark-1.3-contributor-free,qwen7b,qwen3-8b'
+).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 
 const ROOT = __dirname;
 
@@ -104,7 +147,7 @@ function proxyOpenAI(req, res) {
       // Model wajib bagi upstream: isi default bila klien tidak mengirim/kosong.
 
       if (!payload.model || typeof payload.model !== 'string' || !payload.model.trim()) {
-        payload.model = process.env.DEFAULT_MODEL || 'ling-3.0-flash-fin-free';
+        payload.model = process.env.DEFAULT_MODEL || 'nemotron-3.5-lightning-free';
       }
       const isStream = USE_SSE === '1';
       const clientAuth = req.headers.authorization || '';
@@ -113,6 +156,8 @@ function proxyOpenAI(req, res) {
         'content-type': 'application/json',
         'accept': isStream ? 'text/event-stream' : (req.headers.accept || 'application/json'),
         'x-session-id': req.headers['x-session-id'] || pickSessionId(),
+        'origin': 'https://opencode.ai/zen',
+        'referer': 'https://opencode.ai/zen',
       };
       if (authHeader) headers.authorization = authHeader;
 
@@ -138,26 +183,68 @@ function proxyOpenAI(req, res) {
           } else { res.end(); }
           return resolve();
         }
+
+        // Petakan model untuk upstream ini (agar failover antar provider
+        // menghasilkan model yang valid). Body request tidak dimutasi global —
+        // hanya untuk salinan yang dikirim ke upstream ini.
+        let sendModel = payload.model;
+        if (UPSTREAM_MODEL_MAP[base]) {
+          const mapped = UPSTREAM_MODEL_MAP[base][payload.model];
+          if (mapped) sendModel = mapped;
+        }
+
         let upstreamReq = null;
 
 
-        // Zen terkadang menjawab >30s untuk model gratis tertentu. Panjang timeout
-        // ini feksibel: ia naik 2x per upstream cadangan, maksimum 120s.
-        // Client side (app.js) punya timeout sendiri yang lebih pendek supaya
-        // mode auto tidak menunggu lama.
+        // Zen/Free.ai gratis kadang lambat (>30s) atau kena rate-limit (429).
+        // Timeout agak panjang agar jawaban lambat tetap bisa lolos, tetapi
+        // tetap di bawah AI_TIMEOUT_MS klien (60s) sehingga failover berjalan.
+        const upstreamTimeoutMs = Math.min(45000, (30000 * (idx + 1)));
         const upstreamTimeout = setTimeout(() => {
-          if (upstreamReq ) upstreamReq.destroy(new Error('upstream timeout'));
-        }, Math.min(120000, (60000 * (idx + 1))));
+          if (upstreamReq) upstreamReq.destroy(new Error('upstream timeout'));
+        }, upstreamTimeoutMs);
+
+        const failover = function () {
+          if (idx + 1 < UPSTREAMS.length) {
+            tryUpstream(idx + 1);
+          } else if (!res.headersSent) {
+            res.writeHead(502, { 'content-type': 'application/json' });
+            res.end(JSON.stringify({ error: { message: 'Semua upstream gagal' } }));
+            resolve();
+          } else { resolved204OrEnd(res); resolve(); }
+        };
+
         upstreamReq = pickTransport(base).request(
-          base + '/v1/chat/completions',
-          { method: 'POST', headers, timeout: 120000 },
+          chatUrl(base),
+          { method: 'POST', headers, timeout: upstreamTimeoutMs },
           (upRes) => {
             clearTimeout(upstreamTimeout);
+            // Kegagalan dari upstream (429/4xx/5xx): coba cadangan bila ada.
+            if (upRes.statusCode >= 400) {
+              upRes.resume();
+              if (idx + 1 < UPSTREAMS.length) {
+                tryUpstream(idx + 1);
+              } else {
+                applyCors(res);
+                const chunks = [];
+                upRes.on('data', (c) => chunks.push(c));
+                upRes.on('end', () => {
+                  res.writeHead(upRes.statusCode || 502, { 'content-type': 'application/json' });
+                  res.end(Buffer.concat(chunks).toString('utf8'));
+                  resolve();
+                });
+              }
+              return;
+            }
             const target = res;
             for (const [k, v] of Object.entries(upRes.headers)) {
-              if (['transfer-encoding', 'connection'].includes(k.toLowerCase())) continue;
+              const lk = k.toLowerCase();
+              // Jangan salin header CORS dari upstream — milik klien harus
+              // memakai aturan CORS server ini (ALLOW_ORIGIN), bukan upstream.
+              if (lk === 'transfer-encoding' || lk === 'connection' || lk.indexOf('access-control-') === 0) continue;
               try { target.setHeader(k, v); } catch (_) {}
             }
+            applyCors(res);
             target.writeHead(upRes.statusCode || 502);
             upRes.pipe(target);
             upRes.on('end', () => resolve());
@@ -166,15 +253,11 @@ function proxyOpenAI(req, res) {
         );
         upstreamReq.on('error', (e) => {
           clearTimeout(upstreamTimeout);
-          if (idx + 1 < UPSTREAMS.length) { tryUpstream(idx + 1); }
-          else if (!res.headersSent) {
-            res.writeHead(502, { 'content-type': 'application/json' });
-            res.end(JSON.stringify({ error: { message: 'Upstream error: ' + e.message } }));
-            resolve();
-          } else { resolved204OrEnd(res); }
+          failover();
         });
         upstreamReq.on('timeout', () => upstreamReq.destroy(new Error('upstream timeout')));
-        upstreamReq.write(JSON.stringify(payload));
+        const outPayload = Object.assign({}, payload, { model: sendModel });
+        upstreamReq.write(JSON.stringify(outPayload));
         upstreamReq.end();
       };
       tryUpstream(0);
@@ -188,6 +271,10 @@ function resolved204OrEnd(res) { try { res.end(); } catch (_) {} }
 const server = http.createServer(async (req, res) => {
   const reqUrl = new URL(req.url, 'http://localhost');
   const urlPath = reqUrl.pathname;
+
+  if (process.env.DEBUG_LOG === '1') {
+    console.log(`[req] ${req.method} ${urlPath}`);
+  }
 
   if (req.method === 'OPTIONS') {
     // CORS preflight
@@ -222,65 +309,21 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-// Sajikan /api/models dengan cache singkat + fallback antar upstream.
+// Sajikan /api/models — daftar statis model gratis yang diizinkan.
+// Model selalu diambil dari DEFAULT_MODELS (bukan dari upstream), sehingga UI
+// menampilkan daftar yang konsisten dan tidak bergantung pada /v1/models upstream.
 function serveModels(res) {
-  return new Promise((resolve) => {
-    const now = Date.now();
-    if (modelsCache && now - modelsCacheAt < MODELS_TTL * 1000) {
-      res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(modelsCache);
-      return resolve();
-    }
-
-    const tryUpstream = function (idx) {
-      const base = UPSTREAMS[idx];
-      if (!base) {
-        res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ data: [] }));
-        return resolve();
-      }
-      let modelsReq = null;
-      const modelsTimer = setTimeout(() => {
-        if (modelsReq) modelsReq.destroy(new Error('upstream timeout'));
-        if (!res.headersSent) {
-          res.writeHead(200, { 'content-type': 'application/json' });
-          res.end(JSON.stringify({ data: [] }));
-        }
-        resolve();
-      }, 15000);
-      modelsReq = pickTransport(base).get(
-        base + '/v1/models',
-        { headers: { accept: 'application/json' } },
-        (upRes) => {
-          clearTimeout(modelsTimer);
-          const chunks = [];
-          upRes.on('data', (c) => chunks.push(c));
-          upRes.on('end', () => {
-            const body = Buffer.concat(chunks).toString('utf8');
-            // Simpan cache hanya bila respons sukses & valid.
-            try {
-              const parsed = JSON.parse(body);
-              if (upRes.statusCode === 200 && parsed && parsed.data) {
-                modelsCache = body;
-                modelsCacheAt = Date.now();
-              }
-            } catch (_) {}
-            res.writeHead(upRes.statusCode || 200, { 'content-type': 'application/json' });
-            res.end(upRes.statusCode === 200 ? body : JSON.stringify({ data: [] }));
-            resolve();
-          });
-          upRes.on('error', () => { clearTimeout(modelsTimer); res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ data: [] })); resolve(); });
-        }
-      );
-      modelsReq.on('error', () => {
-        clearTimeout(modelsTimer);
-        if (idx + 1 < UPSTREAMS.length) { tryUpstream(idx + 1); }
-        else { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ data: [] })); resolve(); }
-      });
-      modelsReq.on('timeout', () => modelsReq.destroy(new Error('upstream timeout')));
-    };
-    tryUpstream(0);
-  });
+  const now = Date.now();
+  if (modelsCache && now - modelsCacheAt < MODELS_TTL * 1000) {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(modelsCache);
+    return;
+  }
+  const list = DEFAULT_MODELS.map(function (id) { return { id: id, object: 'model' }; });
+  modelsCache = JSON.stringify({ object: 'list', data: list });
+  modelsCacheAt = Date.now();
+  res.writeHead(200, { 'content-type': 'application/json' });
+  res.end(modelsCache);
 }
 
 server.listen(PORT, '0.0.0.0', () => {

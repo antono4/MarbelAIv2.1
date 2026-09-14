@@ -1,7 +1,7 @@
 {
   "name": "marbel-ai",
-  "version": "1.0.0",
-  "description": "Marbel AI chat UI - backend proxy ke endpoint OpenAI-compatible + static UI",
+  "version": "1.1.0",
+  "description": "Marbel AI chat UI + proxy multi-model gratis (OpenCode Zen & Free.ai)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

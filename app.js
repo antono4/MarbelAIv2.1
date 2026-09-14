@@ -187,7 +187,7 @@
       const built = await chatAnswer(msgs, model.value);
       const finalText = built.content;
       inner.innerHTML = decorateText(finalText);
-      tag.querySelector('.model-tag').textContent = ' · ' + built.modelId.replace('-free', '');
+      tag.querySelector('.model-tag').textContent = ' · ' + built.modelId;
       if (itemIdx >= 0) current.items[itemIdx].content = finalText;
       else current.items.push({ role: 'assistant', content: finalText, model: built.modelId });
       setStatus('on', 'terhubung');
@@ -235,12 +235,33 @@
     welcomeEl.style.display = 'none';
   }
 
-// Konfigurasi Model (sumber: MiniDevin — via Puter.js, tanpa backend/API key.
-// Model dijalankan langsung dari browser lewat SDK Puter.
+// Konfigurasi Model — sumber: https://github.com/12britz/awesome-free-models
+// Model gratis yang aktif lewat backend proxy (server.js):
+//  - OpenCode Zen (opencode.ai/zen) — gratis tanpa API key, butuh X-Session-ID.
+//  - Free.ai (api.free.ai) — model open-weight gratis tanpa API key.
+// Model dipanggil via /api/chat (proxy CORS). SDK Puter dipakai hanya sebagai
+// cadangan opsional bila backend tidak tersedia (mis. hosting statis murni).
 const FREE_MODELS = [
-  'gpt-5-nano', 'gpt-4o-mini', 'claude-sonnet-4',
-  'gemini-2.5-flash', 'deepseek-chat', 'grok-4',
+  'nemotron-3.5-lightning-free',
+  'big-pickle',
+  'ling-3.0-flash-fin-free',
+  'nemotron-3-ultra-free',
+  'mimo-v2.5-free',
+  'qwen7b',
+  'qwen3-8b',
 ];
+
+// Backend proxy.
+//  - Bila halaman disajikan oleh server.js (host kerja/Render/Railway/Docker),
+//    pakai origin yang sama (relative: '' → /api/chat).
+//  - Bila halaman statis di GitHub Pages, arahkan ke backend proxy yang
+//    menjalankan server.js. Bisa dioverride dengan ?frontend=URL.
+const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
+const DEFAULT_BACKEND = isGitHubPages ? 'https://work-1-fovnrjhfmpdyeqma.prod-runtime.all-hands.dev' : '';
+const FALLBACK_BACKEND = isGitHubPages ? 'https://work-2-fovnrjhfmpdyeqma.prod-runtime.all-hands.dev' : '';
+const FRONTEND_OVERRIDE = new URLSearchParams(window.location.search).get('frontend');
+let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
+const api = function (path) { return backendInUse + path; };
 
 const AI_TIMEOUT_MS = 60000;
 function withTimeout(promise, ms) {
@@ -269,6 +290,46 @@ async function ensurePuter(timeoutMs) {
     await new Promise(function (r) { setTimeout(r, 100); });
   }
 }
+
+// Pilih backend yang sehat: coba yang aktif, gagal → cadangan.
+async function ensureBackend() {
+  if (!isGitHubPages) return; // same-origin selalu dipakai
+  if (backendInUse === FALLBACK_BACKEND) return;
+  try {
+    const res = await fetch(api('/api/models'), { method: 'GET', headers: { accept: 'application/json' } });
+    if (res.ok) return;
+  } catch (e) {}
+  backendInUse = FALLBACK_BACKEND;
+}
+
+// Ambil jawaban lengkap dari backend proxy (OpenAI-compatible /api/chat).
+// Kalau model tak dikenal upstream, server mengisi default; klien tetap
+// mengirim model agar info di tag jawaban akurat.
+async function backendChat(messages, model) {
+  await ensureBackend();
+  const res = await withTimeout(fetch(api('/api/chat'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ model: model, messages: messages, stream: false }),
+  }), AI_TIMEOUT_MS);
+
+  if (!res.ok) {
+    const text = await res.text().catch(function () { return ''; });
+    throw new Error('HTTP ' + res.status + (text ? ': ' + text.slice(0, 120) : ''));
+  }
+  const data = await res.json().catch(function () { throw new Error('Respons bukan JSON'); });
+  if (data.error) throw new Error(data.error.message || data.error || 'Upstream error');
+  let text = '';
+  if (data.choices && data.choices[0]) {
+    const c = data.choices[0].message || {};
+    text = c.content || c.reasoning_content || '';
+  }
+  if (typeof data === 'string') text = data;
+  if (!text) throw new Error('Model tanpa isi');
+  return { text: text, realModel: data.model || model };
+}
+
+// Cadangan: panggil SDK Puter bila backend tidak tersedia.
 async function puterChat(messages, model) {
   await ensurePuter(8000);
   let full = '';
@@ -288,7 +349,22 @@ async function puterChat(messages, model) {
     else throw new Error(err.message || 'Stream Puter gagal.');
   }
   if (!full) throw new Error('Upstream mengembalikan respons kosong (model tanpa isi)');
-  return full;
+  return { text: full, realModel: model };
+}
+
+// Kembalikan {text, realModel} — backend dulu, Puter cadangan.
+async function modelChat(messages, model) {
+  const errs = [];
+  for (const attempt of [backendChat, puterChat]) {
+    if (attempt === puterChat && !(window.puter && window.puter.ai)) continue;
+    try {
+      const out = await attempt(messages, model);
+      return out;
+    } catch (err) {
+      errs.push((attempt === puterChat ? 'Puter: ' : 'Backend: ') + err.message);
+    }
+  }
+  throw new Error(errs.join(' · ') || 'Semua jalur gagal.');
 }
 
 
@@ -320,23 +396,24 @@ async function puterChat(messages, model) {
   // Kesalahan server/jaringan diulang otomatis sampai dapat respons.
   async function streamChat(modelId, messages, onChunk) {
   setStatus('on', 'mencoba model: ' + modelId + '…');
-  const fullText = await retryUntilResponse(function () {
-    return puterChat(messages, modelId);
+  const out = await retryUntilResponse(function () {
+    return modelChat(messages, modelId);
   }, 'chat ' + modelId);
+  const fullText = out.text;
   const words = fullText.split(' ');
   for (let i = 1; i <= words.length; i++) {
     const partial = words.slice(0, i).join(' ');
     if (onChunk) onChunk(partial, modelId);
     await new Promise(function (r) { setTimeout(r, 16); });
   }
-  return fullText;
+  return out;
 }
   // Ambil jawaban lengkap dari 1 model (tanpa efek mengetik). Dipakai ensemble paralel.
   // Kesalahan diulang otomatis sampai model ini memberikan respons.
 function runOneModel(modelId, messages) {
   setStatus('on', 'menghubungi ' + modelId + '…');
   return retryUntilResponse(function () {
-    return puterChat(messages, modelId);
+    return modelChat(messages, modelId);
   }, 'ensemble ' + modelId);
 }
   // Resolve dengan nilai pertama yang sukses di antara banyak Promise.
@@ -396,7 +473,7 @@ function runOneModel(modelId, messages) {
 
 
       const jobs = order.map(function (m) {
-        return runOneModel(m, messages).then(function (content) { return { modelId: m, content: content }; });
+        return runOneModel(m, messages).then(function (out) { return { modelId: out.realModel || m, content: out.text }; });
       });
       first = await firstFulfilled(jobs);
     } else {
@@ -409,7 +486,8 @@ function runOneModel(modelId, messages) {
       for (let i = 0; i < order.length; i++) {
         const m = order[i];
         try {
-          first = { modelId: m, content: await runOneModel(m, messages) };
+          const out = await runOneModel(m, messages);
+          first = { modelId: out.realModel || m, content: out.text };
           break;
         } catch (err) {
           if (isNetworkError(err)) throw err;
@@ -473,7 +551,7 @@ function runOneModel(modelId, messages) {
       else {
         const msgEl = createAssistantMessage(i.content);
         msgEl.inner.innerHTML = decorateText(i.content);
-        if (i.model) msgEl.tag.querySelector('.model-tag').textContent = ' · ' + i.model.replace('-free', '');
+        if (i.model) msgEl.tag.querySelector('.model-tag').textContent = ' · ' + i.model;
       }
     });
     updateThreadList();
@@ -513,14 +591,14 @@ function runOneModel(modelId, messages) {
       const renderChunk = function (partial, modelId) {
         msgEls.inner.innerHTML = decorateText(partial);
         if (modelId && msgEls.tag) {
-          msgEls.tag.querySelector('.model-tag').textContent = ' · ' + modelId.replace('-free', '');
+          msgEls.tag.querySelector('.model-tag').textContent = ' · ' + modelId;
         }
         scrollDown();
       };
 
       const built = await chatAnswer(buildThreadHistory(), selected, renderChunk);
       msgEls.inner.innerHTML = decorateText(built.content);
-      msgEls.tag.querySelector('.model-tag').textContent = ' · ' + built.modelId.replace('-free', '');
+      msgEls.tag.querySelector('.model-tag').textContent = ' · ' + built.modelId;
       if (msgEls.actions) msgEls.actions.style.display = '';
       current.items.push({ role: 'assistant', content: built.content, model: built.modelId });
       setStatus('on', 'terhubung');
@@ -668,5 +746,9 @@ function hideLowBalanceDialogs() {
 
   hideLowBalanceDialogs();
   newThread();
-  loadModels();
+  ensureBackend().then(function () {
+    loadModels();
+  }).catch(function () {
+    loadModels();
+  });
 })();

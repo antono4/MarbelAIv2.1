@@ -21,30 +21,27 @@ Chat dengan beragam model AI sekaligus yang saling melengkapi untuk jawaban yang
 .
 - **Cepat dan responsif** - efek mengetik agar terasa ringan.
 
-- **Tanpa backend & API key** - model dijalankan langsung di browser lewat [Puter](https://puter.com), sama seperti MiniDevin. Cukup login sekali dengan akun Puter untuk menyimpan riwayat.
+- **Tanpa biaya & tanpa API key** - semua model gratis (lihat tabel di bawah), disajikan lewat backend proxy `server.js` (OpenCode Zen + Free.ai). Tidak perlu kartu kredit atau akun berbayar.
 
-- **Siap deploy** - frontend statis bisa di-hosting di mana saja (GitHub Pages, Render, Railway, Docker, dll. 
+- **Siap deploy** - frontend bisa di-host di mana saja; pasang `server.js` di Render, Railway, Docker, atau host kerja (work-1/work-2) sebagai proxy CORS. 
 
-## Model AI (sumber: MiniDevin via Puter.
+## Model AI (dari [awesome-free-models](https://github.com/12britz/awesome-free-models))
 
+Daftar model gratis yang dipakai di `app.js` (`FREE_MODELS`), disajikan lewat backend proxy `server.js`:
 
+| Model | Provider | Keterangan |
+|---|---|---|
+| `nemotron-3.5-lightning-free` | OpenCode Zen | NVIDIA Nemotron ringan, cepat (default) |
+| `big-pickle` | OpenCode Zen | Stealth model, kemampuan bergilir |
+| `ling-3.0-flash-fin-free` | OpenCode Zen | Model cepat untuk chat |
+| `nemotron-3-ultra-free` | OpenCode Zen | Nemotron 3 Ultra, kadang lambat |
+| `mimo-v2.5-free` | OpenCode Zen | Xiaomi MiMo (rate-limit kadang 429) |
+| `qwen7b` | Free.ai | Qwen 3, model open-weight gratis |
+| `qwen3-8b` | Free.ai | Qwen 3 8B, model open-weight gratis |
 
-Daftar model yang dipakai di `app.js` (`FREE_MODELS`), sama dengan daftar model MiniDevin:
+Mode **Auto Model** mencoba semua model di atas secara paralel dan memakai jawaban tercepat yang berhasil. Semua model gratis — tanpa API key, tanpa kartu kredit.
 
-
-
-
-
-| Model | Keterangan |
-|---|---|
-| `gpt-5-nano` | Model ringan cepat dari OpenAI |
-| `gpt-4o-mini` | Model mini hemat biaya |
-| `claude-sonnet-4` | Model andal dari Anthropic |
-| `gemini-2.5-flash` | Model cepat dari Google |
-| `deepseek-chat` | Model chat dari DeepSeek |
-| `grok-4` | Model dari xAI |
-
-Mode **Auto Model** mencoba semua model di atas secara paralel dan memakai jawaban tercepat yang berhasil.
+> Catatan: model OpenCode Zen butuh header `X-Session-ID` (otomatis dirotasi pool oleh `server.js`). Saat Zen rate-limit (429) atau lambat, server otomatis failover ke Free.ai.
 
 
 
@@ -62,7 +59,9 @@ cd MarbelAIv2.1
 PORT=12000 node server.js
 ```
 
-Server hanya bertugas menyajikan file statis (`index.html`, `app.js`, `styles.css`); chat berjalan langsung di browser lewat Puter — tanpa endpoint proxy. Buka `http://localhost:12000` di browser, lalu login sekali ke Puter (popup otomatis muncul untuk mengizinkan model berjalan. Riwayat percakapan disimpan di browser lewat penyimpanan sesi Puter..
+Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus menjadi **proxy CORS** ke provider model gratis (OpenCode Zen + Free.ai) di `/api/chat`. Buka `http://localhost:12000` di browser lalu kirim pesan — tidak perlu login atau API key.
+
+> Untuk GitHub Pages (statis murni), tambahkan `?frontend=<URL backend>` atau atur `DEFAULT_BACKEND` di `app.js` agar UI menunjuk ke instance `server.js` yang sedang berjalan (mis. Render). Tanpa backend, SDK Puter dipakai sebagai cadangan bila `puter.ai` tersedia.
 
 
 
@@ -74,6 +73,13 @@ Server hanya bertugas menyajikan file statis (`index.html`, `app.js`, `styles.cs
 | Variabel | Default | Deskripsi |
 |---|---|---|
 | `PORT` | `12000` | Port HTTP server |
+| `UPSTREAM` | `https://opencode.ai/zen,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
+| `UPSTREAM_PREFIX` | `''` | Prefix path upstream (untuk Zen cukup set base, otomatis `/v1`) |
+| `DEFAULT_MODEL` | `nemotron-3.5-lightning-free` | Model default bila klien tidak mengirim |
+| `MODELS_LIST` | daftar model gratis | Daftar model yang dilayani `/api/models` |
+| `SESSION_POOL_SIZE` | `16` | Ukuran pool `X-Session-ID` untuk Zen |
+| `API_KEY` | `''` | Opsional, dipakai bila upstream butuh Bearer |
+| `ALLOW_ORIGIN` | `*` | Origin yang diizinkan CORS |
 
 
 
@@ -84,8 +90,8 @@ Server hanya bertugas menyajikan file statis (`index.html`, `app.js`, `styles.cs
 | Endpoint | Metode | Deskripsi |
 |---|---|---|
 | `/` | `GET` | UI statis (`index.html`) |
-| `/api/models` | `GET` | Daftar model dari `FREE_MODELS` (statis di `app.js`) |
-| `/api/chat` | `POST` | Proksi ke upstream OpenAI-compatible (opsional, dipakai bila `UPSTREAM` diset) |
+| `/api/models` | `GET` | Daftar model gratis aktif (`MODELS_LIST`) |
+| `/api/chat` | `POST` | Proksi ke upstream OpenAI-compatible dengan failover |
 
 
 
