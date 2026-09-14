@@ -452,6 +452,93 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 
 .model-tag { color:var(--accent); font-weight:700; font-family:var(--mono); font-size:12.5px; }
 
+/* ================== kartu media (gambar/video) ================== */
+.media-card {
+  display:flex; flex-direction:column; gap:10px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin-top:12px;
+  max-width:480px;
+  overflow:hidden;
+}
+.media-head { display:flex; align-items:center; gap:8px; }
+.media-ico { font-size:16px; line-height:1; }
+.media-label { font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.02em; }
+.media-thumb { display:block; width:100%; border-radius:10px; overflow:hidden; background:var(--composer); }
+.media-thumb img { display:block; width:100%; height:auto; max-height:420px; object-fit:cover; }
+.media-video-wrap { display:block; width:100%; }
+.media-vid { display:block; width:100%; border-radius:10px; max-height:420px; background:#000; }
+
+/* fallback ilustrasi animasi (Ken Burns) untuk video yang tidak tersedia */
+.media-burns-wrap { width:100%; border-radius:10px; overflow:hidden; background:var(--composer); }
+.media-burns {
+  display:block; width:100%; height:auto; max-height:420px;
+  animation:mburns 16s ease-in-out infinite alternate;
+}
+@keyframes mburns {
+  0%   { transform:scale(1) translate(0,0); }
+  100% { transform:scale(1.15) translate(-2.5%,1.5%); }
+}
+.media-caption { font-size:13px; color:var(--muted); line-height:1.5; word-break:break-word; }
+.media-actions { display:flex; gap:6px; flex-wrap:wrap; }
+
+.media-skel { display:flex; align-items:center; gap:10px; padding:22px 14px; justify-content:center; }
+.media-spin {
+  width:18px; height:18px; border-radius:50%;
+  border:2px solid var(--line); border-top-color:var(--accent);
+  animation:media-spin 0.9s linear infinite;
+}
+@keyframes media-spin { to { transform:rotate(360deg); } }
+.media-loading { font-size:13px; color:var(--muted); font-weight:600; }
+.media-err { font-size:13px; color:#e5484d; font-weight:600; }
+
+/* chip pembuat media di layar sambutan */
+.media-suggest {
+  display:flex; gap:10px; flex-wrap:wrap;
+  justify-content:center;
+  margin-top:14px;
+}
+.media-chip {
+  display:flex; align-items:center; gap:10px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px 14px;
+  cursor:pointer;
+  color:var(--text);
+  text-align:left;
+  transition:all .16s ease;
+}
+.media-chip:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 4px 16px var(--shadow); }
+.mc-ico { font-size:20px; line-height:1; }
+.mc-tx { display:flex; flex-direction:column; }
+.mc-tx b { font-size:14px; }
+.mc-tx small { font-size:12px; color:var(--muted); }
+
+/* tombol mode media di composer */
+.cf-actions { display:flex; align-items:center; gap:8px; }
+.media-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  color:var(--muted);
+  border-radius:999px;
+  padding:8px 13px;
+  font-size:13px;
+  font-family:inherit;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.media-btn:hover { color:var(--accent); border-color:var(--accent); }
+.media-btn.active {
+  color:var(--accent-ink);
+  background:var(--accent);
+  border-color:var(--accent);
+}
+
 /* typing indicator */
 .typing { display:inline-flex; gap:5px; align-items:center; }
 .typing span { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:blink 1.2s infinite; }
@@ -594,4 +681,11 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   .cs-label { display:none; }
   .custom-select select { max-width:140px; padding:7px 9px; font-size:11.5px; }
   .send { width:38px; height:38px; border-radius:10px; }
+  .cf-actions { gap:6px; }
+  .media-btn { padding:7px 10px; font-size:12px; }
+  .media-btn span { display:none; }
+  .media-btn svg { margin:0; }
+  .media-card { max-width:100%; }
+  .media-suggest { justify-content:flex-start; }
+  .media-chip { flex:1 1 100%; max-width:100%; }
 }
