@@ -38,7 +38,7 @@ Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus j
 - `qwen7b` (Free.ai)
 - `qwen3-8b` (Free.ai)
 
-Model dipanggil via `modelChat()` → `backendChat()` yang `fetch` ke `/api/chat` (proxy server.js). Jika backend tidak tersedia (hosting statis murni), fallback ke `puter.ai.chat()` bila SDK Puter tersedia.
+Model dipanggil via `modelChat()` → `backendChat()` yang `fetch` ke `/api/chat` (proxy server.js).
 
 ## Pola chat (ensemble + fallback)
 
@@ -64,5 +64,5 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 ## Catatan penting
 
 - File sumber memakai gaya penulisan tidak biasa (koma-titik tanpa spasi konsisten). `node -c` valid meskipun tampak aneh; jangan "merapikan" tanpa tes.
-- Untuk GitHub Pages (statis): UI menunjuk backend via `DEFAULT_BACKEND`/`FALLBACK_BACKEND` (host kerja all-hands) atau `?frontend=URL`. Lalu semua model lewat proxy; Puter jadi fallback terakhir.
+- Untuk GitHub Pages (statis): UI menunjuk backend via `DEFAULT_BACKEND`/`FALLBACK_BACKEND` (host kerja all-hands) atau `?frontend=URL`. Semua model lewat proxy; pastikan backend tersedia.
 - Zen kena rate-limit (429) saat banyak request dari satu IP dalam waktu singkat; pool `X-Session-ID` + retry di server mengurangi hal ini.
