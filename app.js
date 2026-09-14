@@ -241,8 +241,7 @@
 //  - pollinations (text.pollinations.ai) — GPT-OSS 20B (tier anonim).
 //  - OpenCode Zen (opencode.ai/zen) — model gratis tanpa API key, butuh X-Session-ID.
 //  - Free.ai (api.free.ai) — model open-weight gratis tanpa API key.
-// Model dipanggil via /api/chat (proxy CORS). SDK Puter dipakai hanya sebagai
-// cadangan opsional bila backend tidak tersedia (mis. hosting statis murni).
+// Model dipanggil via /api/chat (proxy CORS).
 const FREE_MODELS = [
   'qwen3.6-27b',
   'gpt-oss-20b',
@@ -278,21 +277,6 @@ function withTimeout(promise, ms) {
       }, ms);
     }),
   ]);
-}
-async function* guardedStream(iterable, ms) {
-  const it = iterable[Symbol.asyncIterator]();
-  while (true) {
-    const { value, done } = await withTimeout(it.next(), ms);
-    if (done) break;
-    yield value;
-  }
-}
-async function ensurePuter(timeoutMs) {
-  const start = Date.now();
-  while (!(window.puter && window.puter.ai)) {
-    if (Date.now() - start > timeoutMs) throw new Error('SDK Puter gagal dimuat. Muat ulang halaman.');
-    await new Promise(function (r) { setTimeout(r, 100); });
-  }
 }
 
 // Pilih backend yang sehat: coba yang aktif, gagal → cadangan.
@@ -333,39 +317,15 @@ async function backendChat(messages, model) {
   return { text: text, realModel: data.model || model };
 }
 
-// Cadangan: panggil SDK Puter bila backend tidak tersedia.
-async function puterChat(messages, model) {
-  await ensurePuter(8000);
-  let full = '';
-  let resp;
-  try {
-    resp = await withTimeout(puter.ai.chat(messages, { model: model, stream: true }), AI_TIMEOUT_MS);
-  } catch (err) {
-    throw new Error(err.message || 'Puter gagal merespons');
-  }
-  try {
-    for await (const part of guardedStream(resp)) {
-      if (part?.text) full += part.text;
-    }
-  } catch (err) {
-    const direct = (resp && resp.message && resp.message.content) || (resp && resp.text) || (typeof resp === 'string' ? resp : '');
-    if (direct) full = String(direct);
-    else throw new Error(err.message || 'Stream Puter gagal.');
-  }
-  if (!full) throw new Error('Upstream mengembalikan respons kosong (model tanpa isi)');
-  return { text: full, realModel: model };
-}
-
-// Kembalikan {text, realModel} — backend dulu, Puter cadangan.
+// Kembalikan {text, realModel} dari backend proxy.
 async function modelChat(messages, model) {
   const errs = [];
-  for (const attempt of [backendChat, puterChat]) {
-    if (attempt === puterChat && !(window.puter && window.puter.ai)) continue;
+  for (const attempt of [backendChat]) {
     try {
       const out = await attempt(messages, model);
       return out;
     } catch (err) {
-      errs.push((attempt === puterChat ? 'Puter: ' : 'Backend: ') + err.message);
+      errs.push('Backend: ' + err.message);
     }
   }
   throw new Error(errs.join(' · ') || 'Semua jalur gagal.');
@@ -728,27 +688,6 @@ function loadModels() {
   setStatus('on', 'terhubung');
 }
 
-function hideLowBalanceDialogs() {
-  var scan = function () {
-    var nodes = document.querySelectorAll('dialog, [role="dialog"], .modal, .popup, [class*="dialog"], [class*="modal"]');
-    for (var i = 0; i < nodes.length; i++) {
-      var el = nodes[i];
-      var txt = (el.textContent || '').toLowerCase();
-      if (txt.indexOf('not enough funding') !== -1 || txt.indexOf('low balance') !== -1 || txt.indexOf('upgrade now') !== -1 || txt.indexOf('upgrade to continue') !== -1) {
-        try { if (el.close && typeof el.close === 'function') el.close(); } catch (e) {}
-        el.style.display = 'none';
-        el.style.visibility = 'hidden';
-        el.remove();
-      }
-    }
-  };
-  scan();
-  if (window.MutationObserver) {
-    new MutationObserver(function () { scan(); }).observe(document.body, { childList: true, subtree: true });
-  }
-}
-
-  hideLowBalanceDialogs();
   newThread();
   ensureBackend().then(function () {
     loadModels();

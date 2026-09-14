@@ -63,7 +63,7 @@ PORT=12000 node server.js
 
 Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus menjadi **proxy CORS** ke provider model gratis (dari daftar no-cost-ai) di `/api/chat`. Buka `http://localhost:12000` di browser lalu kirim pesan — tidak perlu login atau API key.
 
-> Untuk GitHub Pages (statis murni), tambahkan `?frontend=<URL backend>` atau atur `DEFAULT_BACKEND` di `app.js` agar UI menunjuk ke instance `server.js` yang sedang berjalan (mis. Render). Tanpa backend, SDK Puter dipakai sebagai cadangan bila `puter.ai` tersedia.
+> Untuk GitHub Pages (statis murni), tambahkan `?frontend=<URL backend>` atau atur `DEFAULT_BACKEND` di `app.js` agar UI menunjuk ke instance `server.js` yang sedang berjalan (mis. Render). Pastikan backend tersedia; tanpa backend, chat tidak dapat berjalan.
 
 
 
@@ -116,7 +116,7 @@ Buka `http://localhost:10000`.
 
 Proyek ini mendukung beberapa platform:
 
-- **GitHub Pages** - frontend statis berfungsi penuh di GitHub Pages. Model langsung via Puter, tanpa backend khusus. Riwayat tersimpan per browser lewat akun Puter (lihat [Demo](https://antono4.github.io/MarbelAIv2.1/)).
+- **GitHub Pages** - frontend statis bisa dipakai di GitHub Pages dengan menunjuk ke backend proxy via `?frontend=<URL>` atau `DEFAULT_BACKEND` di `app.js` (lihat [Demo](https://antono4.github.io/MarbelAIv2.1/)).
 - **Render / Railway / Docker** - sajikan sebagai server statis (atau dengan proxy `UPSTREAM` bila perlu)..
 
 
@@ -128,7 +128,7 @@ Proyek ini mendukung beberapa platform:
 ```
 MarbelAIv2.1/
 - server.js       Server statis + proxy OpenAI-compatible (opsional)
-- app.js          Frontend logika chat, ensemble multi-model, dan integrasi Puter
+- app.js          Frontend logika chat, ensemble multi-model, dan proxy backend
 - index.html      Halaman utama UI
 - styles.css      Gaya arsitektur UI
 - Dockerfile      Image Docker
