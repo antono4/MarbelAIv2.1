@@ -12,14 +12,15 @@ services:
     envVars:
       - key: PORT
         value: 10000
-      # UPSTREAM: endpoint OpenAI-compatible gratis tanpa API key.
-      # Zen (opencode.ai/zen) menyediakan model gratis; api.free.ai jadi cadangan.
+      # UPSTREAM: endpoint OpenAI-compatible gratis (dari daftar no-cost-ai) tanpa API key.
+      # uncloseai (Qwen 3.6 27B) + pollinations (GPT-OSS 20B) sebagai utama;
+      # Zen (opencode.ai/zen) & api.free.ai jadi cadangan.
       - key: UPSTREAM
-        value: https://opencode.ai/zen,https://api.free.ai
+        value: https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai
       - key: DEFAULT_MODEL
-        value: nemotron-3.5-lightning-free
+        value: qwen3.6-27b
       - key: MODELS_LIST
-        value: nemotron-3.5-lightning-free,big-pickle,ling-3.0-flash-fin-free,nemotron-3-ultra-free,mimo-v2.5-free,qwen7b,qwen3-8b
+        value: qwen3.6-27b,gpt-oss-20b,nemotron-3.5-lightning-free,big-pickle,ling-3.0-flash-fin-free,nemotron-3-ultra-free,mimo-v2.5-free,qwen7b,qwen3-8b
       - key: API_KEY
         sync: false
       - key: ALLOW_ORIGIN

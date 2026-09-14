@@ -235,13 +235,17 @@
     welcomeEl.style.display = 'none';
   }
 
-// Konfigurasi Model — sumber: https://github.com/12britz/awesome-free-models
+// Konfigurasi Model — sumber: https://github.com/zebbern/no-cost-ai
 // Model gratis yang aktif lewat backend proxy (server.js):
-//  - OpenCode Zen (opencode.ai/zen) — gratis tanpa API key, butuh X-Session-ID.
+//  - uncloseai (hermes.ai.unturf.com & qwen.ai.unturf.com) — Qwen 3.6 27B gratis, tanpa API key.
+//  - pollinations (text.pollinations.ai) — GPT-OSS 20B (tier anonim).
+//  - OpenCode Zen (opencode.ai/zen) — model gratis tanpa API key, butuh X-Session-ID.
 //  - Free.ai (api.free.ai) — model open-weight gratis tanpa API key.
 // Model dipanggil via /api/chat (proxy CORS). SDK Puter dipakai hanya sebagai
 // cadangan opsional bila backend tidak tersedia (mis. hosting statis murni).
 const FREE_MODELS = [
+  'qwen3.6-27b',
+  'gpt-oss-20b',
   'nemotron-3.5-lightning-free',
   'big-pickle',
   'ling-3.0-flash-fin-free',
@@ -257,8 +261,8 @@ const FREE_MODELS = [
 //  - Bila halaman statis di GitHub Pages, arahkan ke backend proxy yang
 //    menjalankan server.js. Bisa dioverride dengan ?frontend=URL.
 const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
-const DEFAULT_BACKEND = isGitHubPages ? 'https://work-1-fovnrjhfmpdyeqma.prod-runtime.all-hands.dev' : '';
-const FALLBACK_BACKEND = isGitHubPages ? 'https://work-2-fovnrjhfmpdyeqma.prod-runtime.all-hands.dev' : '';
+const DEFAULT_BACKEND = isGitHubPages ? 'https://work-1-dkfnjdofwwtfsbdn.prod-runtime.all-hands.dev' : '';
+const FALLBACK_BACKEND = isGitHubPages ? 'https://work-2-dkfnjdofwwtfsbdn.prod-runtime.all-hands.dev' : '';
 const FRONTEND_OVERRIDE = new URLSearchParams(window.location.search).get('frontend');
 let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
 const api = function (path) { return backendInUse + path; };
