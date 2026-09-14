@@ -1,7 +1,7 @@
 {
   "name": "marbel-ai",
   "version": "1.1.0",
-  "description": "Marbel AI chat UI + proxy multi-model gratis (OpenCode Zen & Free.ai)",
+  "description": "Marbel AI chat UI + proxy multi-model gratis (no-cost-ai: uncloseai, pollinations + Zen & Free.ai)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

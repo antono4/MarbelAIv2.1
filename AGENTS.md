@@ -8,11 +8,13 @@ PORT=12000 node server.js
 
 Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus jadi **proxy CORS** ke provider model gratis. Tidak ada dependency npm (hanya modul inti Node).
 
-## Model AI (sumber: awesome-free-models + OpenCode Zen + Free.ai)
+## Model AI (sumber: no-cost-ai + uncloseai + pollinations + Zen + Free.ai)
 
 `FREE_MODELS` di `app.js` — model gratis tanpa API key:
 
-- `nemotron-3.5-lightning-free` (Zen, default)
+- `qwen3.6-27b` (uncloseai, default)
+- `gpt-oss-20b` (pollinations)
+- `nemotron-3.5-lightning-free` (Zen)
 - `big-pickle` (Zen)
 - `ling-3.0-flash-fin-free` (Zen)
 - `nemotron-3-ultra-free` (Zen)
@@ -33,8 +35,9 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 
 ## server.js (statis + proxy)
 
-- `server.js` = proxy OpenAI-compatible dengan **failover berurutan** antar upstream (`UPSTREAM`, dipisah koma). Default: `https://opencode.ai/zen,https://api.free.ai`.
+- `server.js` = proxy OpenAI-compatible dengan **failover berurutan** antar upstream (`UPSTREAM`, dipisah koma). Default: `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai` (no-cost-ai untuk uncloseai/pollinations, cadangan Zen/Free.ai).
 - Zen butuh header `X-Session-ID` → server mengrotasi pool (`SESSION_POOL_SIZE`, default 16).
+- uncloseai (vLLM/Qwen) → server mengirim `chat_template_kwargs.enable_thinking=false` agar jawaban bersih.
 - URL upstream dirakit via `chatUrl`/`modelsUrl`: base `.../zen` → `/zen/v1/chat/completions`; base lain → `/v1/chat/completions`.
 - HTTP error upstream (429/4xx/5xx) → coba upstream berikutnya.
 - Endpoint:
