@@ -1,0 +1,8 @@
+{
+  "appId": "ai.marbel.app",
+  "appName": "Marbel AI",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

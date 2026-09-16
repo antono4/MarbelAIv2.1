@@ -118,6 +118,52 @@ Proyek ini mendukung beberapa platform:
 
 - **GitHub Pages** - frontend statis langsung memanggil provider CORS (uncloseai, Free.ai) dari browser — tanpa backend terpisah, berjalan terus (lihat [Demo](https://antono4.github.io/MarbelAIv2.1/)). Untuk pakai backend proxy sendiri (mis. server.js di Render/Railway), buka dengan `?frontend=<URL>` atau ubah `DEFAULT_BACKEND` di `app.js`.
 - **Render / Railway / Docker** - sajikan sebagai server statis + proxy `UPSTREAM` (bisa jadi backend untuk mode `?frontend=`).
+- **Android (APK)** - lihat [Aplikasi Android (APK)](#aplikasi-android-apk) di atas. APK release `MarbelAI.apk` bisa diunduh juga dari `/MarbelAI.apk` saat backend berjalan.
+
+
+
+## Aplikasi Android (APK)
+
+APK adalah pembungkus WebView (Capacitor) dari UI yang sama. Aset web
+(`index.html`, `app.js`, `styles.css`) dipaketkan di dalam APK, jadi aplikasi
+berjalan mandiri tanpa backend terpisah — memanggil provider gratis langsung
+dari WebView (CORS). Bila provider menolak (mis. rate-limit per-IP), aplikasi
+otomatis beralih ke proxy cadangan `https://marbel-ai.onrender.com`.
+
+- `MarbelAI.apk` — build **release**, sudah ditandatangani (siap dibagikan/di-install).
+- `MarbelAI-debug.apk` — build debug untuk pengujian (dihasilkan `./build-apk.sh`, tidak di-commit).
+
+Instal di perangkat Android (aktifkan "Instal dari sumber tidak dikenal"):
+
+```bash
+adb install -r MarbelAI.apk
+```
+
+### Membangun sendiri
+
+Prasyarat: JDK 17+, Node.js 18+, dan Android SDK (platform 35 + build-tools 35).
+
+```bash
+export ANDROID_HOME=/path/ke/Android/Sdk
+./build-apk.sh            # APK debug
+./build-apk.sh release    # APK release
+```
+
+Hasil build ada di `android/app/build/outputs/apk/`. Skrip ini juga menyalin
+aset web ke `www/` dan menghasilkan ikon launcher dari logo aplikasi
+(`build-icon.py`).
+
+Build release ditandatangani memakai `android/marbel-release.keystore` melalui
+`android/keystore.properties`. Keduanya tidak di-commit (lihat `.gitignore`).
+Untuk rilis nyata, buat keystore Anda sendiri dan simpan kredensialnya dengan aman:
+
+```bash
+keytool -genkeypair -v -keystore android/marbel-release.keystore \
+  -alias marbel -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Detail aplikasi: `applicationId` `ai.marbel.app`, `minSdk` 23, `targetSdk` 35,
+versi `1.1.0`, izin `INTERNET`.
 
 
 
@@ -127,13 +173,18 @@ Proyek ini mendukung beberapa platform:
 
 ```
 MarbelAIv2.1/
-- server.js       Server statis + proxy OpenAI-compatible (opsional)
-- app.js          Frontend logika chat, ensemble multi-model, dan proxy backend
-- index.html      Halaman utama UI
-- styles.css      Gaya arsitektur UI
-- Dockerfile      Image Docker
-- render.yaml     Blueprint Render
-- railway.json    Konfigurasi Railway
+- server.js            Server statis + proxy OpenAI-compatible (opsional)
+- app.js               Frontend logika chat, ensemble multi-model, dan proxy backend
+- index.html           Halaman utama UI
+- styles.css           Gaya arsitektur UI
+- capacitor.config.json Konfigurasi Capacitor (pembungkus Android)
+- build-apk.sh         Skrip build APK
+- build-icon.py        Generator ikon launcher Android
+- android/             Proyek Android (Capacitor)
+- MarbelAI.apk         APK release siap instal
+- Dockerfile           Image Docker
+- render.yaml          Blueprint Render
+- railway.json         Konfigurasi Railway
 ```
 
 

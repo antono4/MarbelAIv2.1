@@ -485,12 +485,20 @@ function directChat(messages, model) {
 // Backend proxy.
 //  - Bila halaman disajikan oleh server.js (host kerja/Render/Railway/Docker),
 //    pakai origin yang sama (relative: '' → /api/chat).
-//  - Bila halaman statis di GitHub Pages, panggil provider langsung dari
-//    browser (CORS) — tanpa perlu backend terpisah → tetap berjalan 24/7.
+//  - Bila halaman statis di GitHub Pages atau dibungkus sebagai aplikasi
+//    Android (Capacitor), panggil provider langsung dari browser (CORS) —
+//    tanpa perlu backend terpisah → tetap berjalan 24/7.
 //    Tetap bisa dioverride dengan ?frontend=URL agar memakai proxy sendiri.
 const isGitHubPages = window.location.hostname.indexOf('github.io') !== -1;
+// Capacitor menyajikan aset dari https://localhost di dalam WebView native;
+// origin itu tidak punya /api/chat, jadi aplikasi Android selalu mode langsung.
+const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const DEFAULT_BACKEND = '';
 const FALLBACK_BACKEND = '';
+// Cadangan untuk aplikasi Android: proxy publik milik proyek ini. Dipakai hanya
+// bila provider langsung menolak (mis. rate-limit per-IP), sehingga APK tetap
+// berfungsi tanpa bergantung pada satu jalur saja.
+const NATIVE_FALLBACK_BACKEND = 'https://marbel-ai.onrender.com';
 const FRONTEND_OVERRIDE = new URLSearchParams(window.location.search).get('frontend');
 let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
 const api = function (path) { return backendInUse + path; };
@@ -538,9 +546,9 @@ async function ensureBackend() {
 // Ambil jawaban lengkap dari backend proxy (OpenAI-compatible /api/chat).
 // Kalau model tak dikenal upstream, server mengisi default; klien tetap
 // mengirim model agar info di tag jawaban akurat.
-async function backendChat(messages, model) {
+async function backendChat(messages, model, baseOverride) {
   await ensureBackend();
-  const res = await withTimeout(fetch(api('/api/chat'), {
+  const res = await withTimeout(fetch((baseOverride || backendInUse) + '/api/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ model: model, messages: messages, stream: false }),
@@ -562,23 +570,29 @@ async function backendChat(messages, model) {
   return { text: text, realModel: data.model || model };
 }
 
-// Kembalikan {text, realModel}. Pada GitHub Pages tanpa override frontend,
-// langsung panggil provider (CORS); selain itu lewat backend proxy.
+// Kembalikan {text, realModel}. Pada GitHub Pages / aplikasi Android (tanpa
+// override frontend) provider dipanggil langsung (CORS); pada aplikasi Android
+// proxy cadangan ditambahkan sebagai jaring pengaman bila provider menolak.
 async function modelChat(messages, model) {
   const errs = [];
   const attempts = [];
-  const useDirect = isGitHubPages && !FRONTEND_OVERRIDE;
+  const useDirect = (isGitHubPages || isNativeApp) && !FRONTEND_OVERRIDE;
   if (useDirect) {
-    attempts.push(directChat(messages, model));
+    attempts.push({ label: 'Langsung', run: function () { return directChat(messages, model); } });
+    if (isNativeApp) {
+      attempts.push({
+        label: 'Cadangan',
+        run: function () { return backendChat(messages, model, NATIVE_FALLBACK_BACKEND); },
+      });
+    }
   } else {
-    attempts.push(backendChat(messages, model));
+    attempts.push({ label: 'Backend', run: function () { return backendChat(messages, model); } });
   }
-  const label = useDirect ? 'Langsung' : 'Backend';
   for (const attempt of attempts) {
     try {
-      return await attempt;
+      return await attempt.run();
     } catch (err) {
-      errs.push(label + ': ' + err.message);
+      errs.push(attempt.label + ': ' + err.message);
     }
   }
   throw new Error(errs.join(' · ') || 'Semua jalur gagal.');
