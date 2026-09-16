@@ -50,7 +50,8 @@ Pemanggilan model:
 
 Logika terpusat di `chatAnswer(messages, selected)`:
 
-- Moda "semua" (Auto Model): jalankan **semua model paralel** (`firstFulfilled`), jawaban lengkap yang paling cepat berhasil yang dipakai. Tag model (`· <nama>`) dipasang di bawah label Marbel AI.
+- Moda "semua" (Auto Model): jalankan **semua model paralel** (`firstFulfilled`), jawaban lengkap yang paling cepat berhasil yang dipakai.
+- Nama model upstream **tidak ditampilkan** di UI (`.model-tag` dibiarkan kosong untuk chat). Hanya label media (`· Flux`, `· Pollinations Video`) yang diisi.
 - Moda single model: coba model pilihan dulu, **failover berurutan** ke `FREE_MODELS` via `retryUntilResponse`.
 - Error apa pun (termasuk respons kosong) dianggap gagal agar failover/ulang otomatis tetap berjalan.
 - Ada tombol **Salin** (copy) dan **Ulangi** (regenerate) di tiap pesan assistant.
