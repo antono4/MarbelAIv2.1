@@ -89,6 +89,8 @@
     wrap.className = 'msg assistant';
     const tag = document.createElement('div');
     tag.className = 'role-tag';
+    // `.model-tag` sengaja dibiarkan kosong untuk chat: nama model upstream
+    // tidak diumbar ke pengguna. Hanya label media (Flux/Video) yang diisi.
     tag.innerHTML = '<span class="agent-dot">&#10022;</span><span>Marbel AI</span><span class="model-tag"></span>';
     const body = document.createElement('div');
     body.className = 'body';
@@ -310,7 +312,6 @@
       const built = await chatAnswer(msgs, model.value);
       const finalText = built.content;
       inner.innerHTML = decorateText(finalText);
-      tag.querySelector('.model-tag').textContent = ' · ' + built.modelId;
       if (itemIdx >= 0) current.items[itemIdx].content = finalText;
       else current.items.push({ role: 'assistant', content: finalText, model: built.modelId });
       setStatus('on', 'terhubung');
@@ -774,7 +775,6 @@ function runOneModel(modelId, messages) {
       else {
         const msgEl = createAssistantMessage(i.content);
         msgEl.inner.innerHTML = decorateText(i.content);
-        if (i.model) msgEl.tag.querySelector('.model-tag').textContent = ' · ' + i.model;
       }
     });
     updateThreadList();
@@ -859,17 +859,13 @@ function runOneModel(modelId, messages) {
       typing.remove();
       const msgEls = createAssistantMessage();
 
-      const renderChunk = function (partial, modelId) {
+      const renderChunk = function (partial) {
         msgEls.inner.innerHTML = decorateText(partial);
-        if (modelId && msgEls.tag) {
-          msgEls.tag.querySelector('.model-tag').textContent = ' · ' + modelId;
-        }
         scrollDown();
       };
 
       const built = await chatAnswer(buildThreadHistory(), selected, renderChunk);
       msgEls.inner.innerHTML = decorateText(built.content);
-      msgEls.tag.querySelector('.model-tag').textContent = ' · ' + built.modelId;
       if (msgEls.actions) msgEls.actions.style.display = '';
       current.items.push({ role: 'assistant', content: built.content, model: built.modelId });
       setStatus('on', 'terhubung');
