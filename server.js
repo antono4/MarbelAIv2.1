@@ -165,6 +165,7 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.json': 'application/json',
+  '.apk': 'application/vnd.android.package-archive',
 };
 
 function serveStatic(res, urlPath) {

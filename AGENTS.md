@@ -68,6 +68,16 @@ Logika terpusat di `chatAnswer(messages, selected)`:
   - `GET /api/models` → daftar statis `MODELS_LIST`
   - `POST /api/chat` → proxy ke upstream OpenAI-compatible
 
+## Aplikasi Android (APK / Capacitor)
+
+- APK = pembungkus WebView Capacitor; aset web dari root (`index.html`, `app.js`, `styles.css`) disalin ke `www/` (`webDir`).
+- Build: `ANDROID_HOME=... ./build-apk.sh [release|debug]` (atau `npm run apk`). Butuh JDK 17+, Android SDK platform 35 + build-tools 35.
+- `capacitor.config.json` tidak lagi memakai `server.url` ke backend — aset disajikan lokal dari `https://localhost`, jadi APK mandiri.
+- Karena origin native tak punya `/api/chat`, `isNativeApp` (dicek dari `window.Capacitor.isNativePlatform()`) memaksa mode **direct CORS**. Bila provider menolak (rate-limit per-IP), `modelChat()` beralih ke cadangan `NATIVE_FALLBACK_BACKEND` (`https://marbel-ai.onrender.com`).
+- Ikon launcher dihasilkan `build-icon.py` (Pillow) dari logo favicon; adaptive icon pakai background `#6C5CE7`.
+- `android/marbel-release.keystore` + `android/keystore.properties` **jangan di-commit** (sudah masuk `.gitignore`).
+- Catatan pengujian: provider uncloseai mudah kena 429 bila request datang dari IP datacenter/lokal; di perangkat nyata normal. Uji perilaku UI dengan menyuntik shim `window.Capacitor={isNativePlatform:()=>true}` sebelum `<script src="app.js">`.
+
 ## Catatan penting
 
 - File sumber memakai gaya penulisan tidak biasa (koma-titik tanpa spasi konsisten). `node -c` valid meskipun tampak aneh; jangan "merapikan" tanpa tes.
