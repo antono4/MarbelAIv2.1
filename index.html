@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Marbel AI — Chat AI</title>
 <meta name="description" content="Marbel AI — mengobrol dengan beragam model AI." />
+<meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#12121c" media="(prefers-color-scheme: dark)" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c5ce7'/%3E%3Cstop offset='1' stop-color='%2300b8a9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='10' fill='url(%23g)'/%3E%3Cpath fill='%23fff' d='M16 5l2.3 6.9a2.4 2.4 0 0 0 1.5 1.5L26.7 16l-6.9 2.3a2.4 2.4 0 0 0-1.5 1.5L16 26.7l-2.3-6.9a2.4 2.4  0 0 0-1.5-1.5L5.3 16l6.9-2.3a2.4 2.4 0 0 0-1.5-1.5L16 5z'/%3E%3Ccircle cx='24.5' cy='24.5' r='2.2' fill='%23fff'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,8 +22,9 @@
   </div>
 
   <div class="layout">
+    <h1 class="sr-only">Marbel AI — chat dengan beragam model AI</h1>
     <!-- ============ Sidebar kiri: brand + percakapan ============ -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Riwayat percakapan">
       <div class="sidebar-head">
         <div class="brand-mark">
           <svg class="brand-ico" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-label="Logo Marbel AI">
@@ -34,7 +37,7 @@
           <span class="brand-name">Marbel<span class="brand-high">AI</span></span>
           <span class="brand-tag">AI Workspace</span>
         </div>
-        <button class="theme-toggle" id="themeToggle" title="Mode siang/malam" aria-label="Ganti mode siang/malam">
+        <button class="theme-toggle" id="themeToggle" title="Mode siang/malam" aria-label="Ganti mode siang/malam" aria-pressed="false">
           <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="4"/>
             <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
@@ -43,20 +46,20 @@
             <path d="M21 12.8A9 9 0 1 1 11.2 3a7.5 7.5 0 0 0 9.8 9.8z"/>
           </svg>
         </button>
-        <button class="panel-hide" id="panelHide" title="Sembunyikan panel" aria-label="Sembunyikan panel">
+        <button class="panel-hide" id="panelHide" title="Sembunyikan panel" aria-label="Sembunyikan panel" aria-expanded="true" aria-controls="sidebar">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 6l-6 6 6 6"/>
           </svg>
         </button>
       </div>
 
-      <button class="new-thread" id="newThread">
+      <button class="new-thread" id="newThread" title="Mulai percakapan baru">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-        <span>New Thread</span>
+        <span>Percakapan Baru</span>
       </button>
 
-      <nav class="conv-bar" aria-label="Conversations">
-        <span class="conv-label">Conversations</span>
+      <nav class="conv-bar" aria-label="Percakapan">
+        <span class="conv-label">Percakapan</span>
         <ul id="threadList" class="thread-list"></ul>
       </nav>
 
@@ -70,9 +73,9 @@
           <span class="header-pill"><span class="hp-dot"></span>Marbel AI</span>
         </div>
         <div class="topbar-right">
-          <div class="status-row">
-            <span id="statusDot" class="dot"></span>
-            <span id="statusIcon" class="status-icon" title="Mencoba lagi…">
+          <div class="status-row" role="status" aria-live="polite">
+            <span id="statusDot" class="dot" aria-hidden="true"></span>
+            <span id="statusIcon" class="status-icon" title="Mencoba lagi…" aria-hidden="true">
               <svg class="icon-spinner" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
                 <path d="M12 2a10 10 0 0 1 10 10"/>
               </svg>
@@ -82,7 +85,7 @@
             </span>
             <span id="statusLabel">menghubungkan…</span>
           </div>
-          <button class="side-btn" id="sideToggle" title="Sembunyikan sidebar">☰</button>
+          <button class="side-btn" id="sideToggle" title="Sembunyikan sidebar" aria-label="Sembunyikan sidebar" aria-expanded="true" aria-controls="sidebar">☰</button>
         </div>
       </header>
 
@@ -131,7 +134,7 @@
                   </button>
                 </div>
               </div>
-              <div class="media-suggest" role="list">
+              <div class="media-suggest" aria-label="Pembuat media">
                 <button data-media="image" class="media-chip">
                   <span class="mc-ico">🎨</span>
                   <span class="mc-tx"><b>Buat Gambar</b><small>Ubah teks jadi gambar AI</small></span>
@@ -146,18 +149,19 @@
                   <span class="ms-title">Semua Model</span>
                   <span id="modelCount" class="ms-count">memuat…</span>
                 </div>
-                <div id="modelNames" class="model-list" role="list"></div>
+                <div id="modelNames" class="model-list"></div>
               </div>
             </div>
           </div>
 
           <!-- Area chat -->
-          <div id="messages" class="messages"></div>
-          <div id="activeBadge" class="active-badge">
+          <div id="messages" class="messages" role="log" aria-live="polite" aria-label="Percakapan dengan Marbel AI"></div>
+          <div id="activeBadge" class="active-badge" role="status">
             <span class="spark-ico" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l1.9 5.7a2 2 0 0 0 1.3 1.3L21 11l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 20l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 11l5.8-2a2 2 0 0 0 1.3-1.3L12 2z"/></svg>
             </span>
-            <span class="typing"><span></span><span></span><span></span></span>
+            <span class="typing" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="sr-only">Marbel AI sedang menulis jawaban…</span>
           </div>
         </div>
       </div>
@@ -184,16 +188,16 @@
             </label>
           </div>
           <div class="cf-actions">
-            <button type="button" id="mediaImage" class="media-btn" data-mode="image" title="Buat gambar dari teks">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M20 15l-5-5-8 8"/></svg>
+            <button type="button" id="mediaImage" class="media-btn" data-mode="image" title="Buat gambar dari teks" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M20 15l-5-5-8 8"/></svg>
               <span>Gambar</span>
             </button>
-            <button type="button" id="mediaVideo" class="media-btn" data-mode="video" title="Buat video dari teks">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="14" height="14" rx="3"/><path d="M16.5 10.5l5-3v9l-5-3z"/></svg>
+            <button type="button" id="mediaVideo" class="media-btn" data-mode="video" title="Buat video dari teks" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="14" height="14" rx="3"/><path d="M16.5 10.5l5-3v9l-5-3z"/></svg>
               <span>Video</span>
             </button>
-            <button id="send" type="submit" class="send" title="Kirim">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            <button id="send" type="submit" class="send" title="Kirim" aria-label="Kirim pesan">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
             </button>
           </div>
         </div>

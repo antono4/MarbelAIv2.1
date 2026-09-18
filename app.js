@@ -20,9 +20,50 @@
   const panelHide = document.getElementById('panelHide');
   const layoutEl = document.querySelector('.layout');
 
-  if (window.innerWidth <= 768) {
+  // ---- Scrim sidebar (mobile) -------------------------------------------
+  // Panel sidebar di ponsel muncul di atas konten; scrim menutupnya saat
+  // diketuk. Visibilitas scrim selalu disinkronkan dengan kelas `collapsed`
+  // agar tidak perlu diperbarui manual di setiap tempat yang mengubahnya.
+  const scrim = document.createElement('button');
+  scrim.type = 'button';
+  scrim.className = 'scrim';
+  scrim.tabIndex = -1;
+  scrim.setAttribute('aria-hidden', 'true');
+  scrim.setAttribute('aria-label', 'Tutup sidebar');
+  document.querySelector('.main').appendChild(scrim);
+
+  function isNarrow() {
+    return window.innerWidth <= 768;
+  }
+
+  function sidebarOpen() {
+    return !layoutEl.classList.contains('collapsed');
+  }
+
+  function syncSidebar() {
+    scrim.classList.toggle('show', isNarrow() && sidebarOpen());
+    if (sideToggle) {
+      const open = sidebarOpen();
+      sideToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      sideToggle.title = open ? 'Sembunyikan sidebar' : 'Tampilkan sidebar';
+      sideToggle.setAttribute('aria-label', sideToggle.title);
+    }
+    if (panelHide) panelHide.setAttribute('aria-expanded', sidebarOpen() ? 'true' : 'false');
+  }
+
+  scrim.addEventListener('click', function () {
     layoutEl.classList.add('collapsed');
-    sideToggle.title = 'Tampilkan sidebar';
+  });
+
+  new MutationObserver(syncSidebar).observe(layoutEl, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+  window.addEventListener('resize', syncSidebar);
+
+  if (isNarrow()) {
+    // Di ponsel sidebar mulai tertutup agar percakapan langsung terlihat.
+    layoutEl.classList.add('collapsed');
   }
 
   let busy = false;
@@ -147,8 +188,14 @@
   // Setel mode media (gambar/video) dan tampilkan status pada tombol.
   function setMediaMode(mode) {
     mediaMode = mode;
-    if (mediaImageBtn) mediaImageBtn.classList.toggle('active', mode === 'image');
-    if (mediaVideoBtn) mediaVideoBtn.classList.toggle('active', mode === 'video');
+    if (mediaImageBtn) {
+      mediaImageBtn.classList.toggle('active', mode === 'image');
+      mediaImageBtn.setAttribute('aria-pressed', mode === 'image' ? 'true' : 'false');
+    }
+    if (mediaVideoBtn) {
+      mediaVideoBtn.classList.toggle('active', mode === 'video');
+      mediaVideoBtn.setAttribute('aria-pressed', mode === 'video' ? 'true' : 'false');
+    }
     const ph = mode === 'image'
       ? 'Tulis deskripsi gambar (mis. kucing memakai topi astronot)…'
       : mode === 'video'
@@ -914,9 +961,6 @@ function runOneModel(modelId, messages) {
   });
   sideToggle.addEventListener('click', function () {
     layoutEl.classList.toggle('collapsed');
-    sideToggle.title = layoutEl.classList.contains('collapsed')
-      ? 'Tampilkan sidebar'
-      : 'Sembunyikan sidebar';
   });
 
   const setTheme = function (theme) {
@@ -927,6 +971,7 @@ function runOneModel(modelId, messages) {
       document.documentElement.dataset.theme = theme;
       localStorage.setItem('marbel-theme', theme);
     }
+    if (themeToggle) themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
   };
 
   const savedTheme = localStorage.getItem('marbel-theme');
@@ -939,6 +984,7 @@ function runOneModel(modelId, messages) {
   }
 
   let themeDark = document.documentElement.dataset.theme === 'dark';
+  themeToggle.setAttribute('aria-pressed', themeDark ? 'true' : 'false');
   themeToggle.addEventListener('click', function () {
     themeDark = !themeDark;
     setTheme(themeDark ? 'dark' : 'light');
@@ -1023,6 +1069,7 @@ function loadModels() {
 }
 
   newThread();
+  syncSidebar();
   ensureBackend().then(function () {
     loadModels();
   }).catch(function () {
