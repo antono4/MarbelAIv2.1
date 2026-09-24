@@ -28,22 +28,18 @@ Untuk menjalankan backend lokal dengan auto-restart:
 
 > **GitHub Pages**: `app.js` **tidak lagi menunjuk host kerja** mana pun. Pada domain `*.github.io`, `modelChat()` memanggil provider yang mendukung CORS (uncloseai hermes/qwen + Free.ai) langsung dari browser — sehingga tanpa backend terpisah dan tetap jalan 24/7. Backend hanya dipakai bila halaman disajikan same-origin oleh `server.js` atau via `?frontend=URL`.
 
-## Model AI (sumber: no-cost-ai + uncloseai + pollinations + Zen + Free.ai)
+## Model AI (sumber: no-cost-ai + uncloseai + pollinations + Free.ai)
 
 `FREE_MODELS` di `app.js` — model gratis tanpa API key:
 
-- `qwen3.6-27b` (uncloseai, default)
+- `qwen3.8-27b` (uncloseai, default)
 - `gpt-oss-20b` (pollinations)
-- `nemotron-3.5-lightning-free` (Zen)
-- `big-pickle` (Zen)
-- `ling-3.0-flash-fin-free` (Zen)
-- `nemotron-3-ultra-free` (Zen)
-- `mimo-v2.5-free` (Zen)
-- `qwen7b` (Free.ai)
 - `qwen3-8b` (Free.ai)
 
+Provider OpenCode Zen sudah dibuang: free tier-nya kini menolak pemakaian di luar klien OpenCode ("can only be used from within OpenCode").
+
 Pemanggilan model:
-- **GitHub Pages**: `modelChat()` → `directChat()` memanggil upstream CORS langsung dari browser (failover: `hermes.ai.unturf.com` → `qwen.ai.unturf.com` → `api.free.ai`).
+- **GitHub Pages**: `modelChat()` → `directChat()` memanggil upstream CORS langsung dari browser (failover: `hermes.ai.unturf.com` → `qwen.ai.unturf.com` → `text.pollinations.ai` → `api.free.ai`).
 - **Same-origin / `?frontend=`**: `modelChat()` → `backendChat()` yang `fetch` ke `/api/chat` (proxy server.js).
 
 ## Pola chat (ensemble + fallback)
@@ -58,10 +54,9 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 
 ## server.js (statis + proxy)
 
-- `server.js` = proxy OpenAI-compatible dengan **failover berurutan** antar upstream (`UPSTREAM`, dipisah koma). Default: `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.openrouter.ai,https://opencode.ai/zen,https://api.free.ai` (no-cost-ai untuk uncloseai/pollinations, cadangan Zen/Free.ai).
-- Zen butuh header `X-Session-ID` → server mengrotasi pool (`SESSION_POOL_SIZE`, default 16).
+- `server.js` = proxy OpenAI-compatible dengan **failover berurutan** antar upstream (`UPSTREAM`, dipisah koma). Default: `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://api.free.ai` (no-cost-ai untuk uncloseai/pollinations, cadangan Free.ai).
 - uncloseai (vLLM/Qwen) → server mengirim `chat_template_kwargs.enable_thinking=false` agar jawaban bersih.
-- URL upstream dirakit via `chatUrl`/`modelsUrl`: base `.../zen` → `/zen/v1/chat/completions`; base lain → `/v1/chat/completions`.
+- URL upstream dirakit via `chatUrl`/`modelsUrl`: pollinations (`text.pollinations.ai`) → `/openai`; base lain → `/v1/chat/completions`.
 - HTTP error upstream (429/4xx/5xx) → coba upstream berikutnya.
 - Endpoint:
   - `GET /` → index.html
@@ -82,4 +77,4 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 
 - File sumber memakai gaya penulisan tidak biasa (koma-titik tanpa spasi konsisten). `node -c` valid meskipun tampak aneh; jangan "merapikan" tanpa tes.
 - Untuk GitHub Pages (statis): UI memanggil provider CORS langsung (`DIRECT_UPSTREAMS` di `app.js`), tanpa backend. Bisa memakai backend via `?frontend=URL`.
-- Zen kena rate-limit (429) saat banyak request dari satu IP dalam waktu singkat; pool `X-Session-ID` + retry di server mengurangi hal ini.
+- Provider gratis mudah kena rate-limit (429) saat banyak request dari satu IP dalam waktu singkat; failover antar upstream di `directChat()`/`server.js` mengurangi hal ini.

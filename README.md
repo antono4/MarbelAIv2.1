@@ -2,7 +2,7 @@
 
 # Marbel AI
 
-Chat dengan beragam model AI sekaligus yang saling melengkapi untuk jawaban yang lebih akurat dan cepat.
+Chat dengan model AI gratis yang saling melengkapi untuk jawaban yang lebih akurat dan cepat. Dilengkapi pembuat gambar dan ilustrasi video.
 
 **Link:**
 - [Demo](https://antono4.github.io/MarbelAIv2.1/)
@@ -31,19 +31,14 @@ Daftar model gratis yang dipakai di `app.js` (`FREE_MODELS`), disajikan lewat ba
 
 | Model | Provider | Keterangan |
 |---|---|---|
-| `qwen3.6-27b` | uncloseai (no-cost-ai) | Qwen 3.6 27B, gratis tanpa API key (default) |
+| `qwen3.8-27b` | uncloseai (no-cost-ai) | Qwen 3.8 27B, gratis tanpa API key (default) |
 | `gpt-oss-20b` | pollinations (no-cost-ai) | GPT-OSS 20B open-weights, tier anonim |
-| `nemotron-3.5-lightning-free` | OpenCode Zen | NVIDIA Nemotron ringan, cepat (cadangan) |
-| `big-pickle` | OpenCode Zen | Stealth model, kemampuan bergilir |
-| `ling-3.0-flash-fin-free` | OpenCode Zen | Model cepat untuk chat |
-| `nemotron-3-ultra-free` | OpenCode Zen | Nemotron 3 Ultra, kadang lambat |
-| `mimo-v2.5-free` | OpenCode Zen | Xiaomi MiMo (rate-limit kadang 429) |
-| `qwen7b` | Free.ai | Qwen 3, model open-weight gratis |
 | `qwen3-8b` | Free.ai | Qwen 3 8B, model open-weight gratis |
 
 Mode **Auto Model** mencoba semua model di atas secara paralel dan memakai jawaban tercepat yang berhasil. Semua model gratis — tanpa API key, tanpa kartu kredit.
 
-> Catatan: provider uncloseai (hermes/qwen) memakai vLLM/Qwen; server mengirim `chat_template_kwargs.enable_thinking=false` agar jawaban bersih tanpa proses berpikir. Saat uncloseai/pollinations rate-limit atau lambat, server otomatis failover ke Zen lalu Free.ai.
+> Catatan: provider uncloseai (hermes/qwen) memakai vLLM/Qwen; server mengirim `chat_template_kwargs.enable_thinking=false` agar jawaban bersih tanpa proses berpikir. Saat uncloseai/pollinations rate-limit atau lambat, server otomatis failover ke Free.ai.
+> Provider OpenCode Zen tidak lagi dipakai: free tier-nya kini menolak pemakaian di luar klien OpenCode ("can only be used from within OpenCode").
 
 
 
@@ -75,11 +70,10 @@ Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus m
 | Variabel | Default | Deskripsi |
 |---|---|---|
 | `PORT` | `12000` | Port HTTP server |
-| `UPSTREAM` | `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.openrouter.ai,https://opencode.ai/zen,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
-| `UPSTREAM_PREFIX` | `''` | Prefix path upstream (untuk Zen cukup set base, otomatis `/v1`) |
-| `DEFAULT_MODEL` | `qwen3.6-27b` | Model default bila klien tidak mengirim |
+| `UPSTREAM` | `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
+| `UPSTREAM_PREFIX` | `''` | Prefix path upstream (bila provider menaruh API di sub-path) |
+| `DEFAULT_MODEL` | `qwen3.8-27b` | Model default bila klien tidak mengirim |
 | `MODELS_LIST` | daftar model gratis | Daftar model yang dilayani `/api/models` |
-| `SESSION_POOL_SIZE` | `16` | Ukuran pool `X-Session-ID` untuk Zen |
 | `API_KEY` | `''` | Opsional, dipakai bila upstream butuh Bearer |
 | `ALLOW_ORIGIN` | `*` | Origin yang diizinkan CORS |
 

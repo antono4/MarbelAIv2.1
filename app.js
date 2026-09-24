@@ -11,7 +11,6 @@
   const mediaVideoBtn = document.getElementById('mediaVideo');
   const newThreadBtn = document.getElementById('newThread');
   const threadList = document.getElementById('threadList');
-  const suggestions = document.getElementById('suggestions');
   const statusDot = document.getElementById('statusDot');
   const statusLabel = document.getElementById('statusLabel');
   const statusIcon = document.getElementById('statusIcon');
@@ -137,7 +136,6 @@
     body.className = 'body';
     const inner = document.createElement('div');
     inner.className = 'inner';
-    body.appendChild(inner);
     // Baris aksi (copy / regenerate), diisi setelah jawaban final.
     const actions = document.createElement('div');
     actions.className = 'm-actions';
@@ -151,10 +149,6 @@
     regenBtn.textContent = 'Ulangi';
     actions.appendChild(copyBtn);
     actions.appendChild(regenBtn);
-    body.appendChild(inner);
-    body.appendChild(actions);
-    wrap.appendChild(tag);
-    wrap.appendChild(body);
 
     copyBtn.addEventListener('click', function () {
       const text = rawText || inner.textContent || '';
@@ -164,6 +158,11 @@
       const target = (rawText != null) ? rawText : '';
       regenerate(target, inner, tag, actions);
     });
+
+    body.appendChild(inner);
+    body.appendChild(actions);
+    wrap.appendChild(tag);
+    wrap.appendChild(body);
 
     messagesEl.appendChild(wrap);
     scrollDown();
@@ -199,104 +198,66 @@
     const ph = mode === 'image'
       ? 'Tulis deskripsi gambar (mis. kucing memakai topi astronot)…'
       : mode === 'video'
-        ? 'Tulis deskripsi video (mis. robot menari di pantai)…'
+        ? 'Tulis deskripsi video (mis. robot menari di pantai) — hasil berupa ilustrasi beranimasi…'
         : 'Tanya apa saja ke Marbel AI…';
     input.placeholder = ph;
     input.focus();
   }
 
-  // Bangun kartu media (gambar/video) di dalam pesan assistant.
-  // Elemen <img>/<video> memakai no-cors (tanpa header Origin) sehingga dapat
-  // memuat dari provider gambar/video; kesalahan dideteksi via onerror.
-  // Untuk video: bila provider video gagal/offline, tampilkan gambar dari
-  // Pollinations dengan animasi Ken Burns agar pengguna tetap mendapat hasil.
-  function createMediaCard(kind, prompt, url, onStateChange, fallbackImgUrl) {
+  // Bangun kartu media di dalam pesan assistant.
+  // Kedua mode berakhir pada gambar dari pollinations: mode gambar menampilkannya
+  // statis, mode video menampilkannya dengan animasi Ken Burns karena tidak ada
+  // provider gratis yang menyajikan video dari URL GET. Elemen <img> memakai
+  // no-cors (tanpa header Origin) sehingga dapat memuat dari provider; kegagalan
+  // dideteksi via event onload/onerror.
+  function createMediaCard(kind, prompt, url, onStateChange) {
     const isImg = kind === 'image';
-    const label = isImg ? 'Gambar dibuat' : 'Video dibuat';
-    const tag = isImg ? '🎨' : '🎬';
+    const label = isImg ? 'Membuat gambar…' : 'Membuat ilustrasi video…';
     const card = document.createElement('div');
     card.className = 'media-card';
-    const downloadName = 'marbel-' + Date.now() + (isImg ? '.jpg' : '.mp4');
     card.innerHTML =
-      '<div class="media-head"><span class="media-ico">' + tag + '</span><span class="media-label">' + label + '</span></div>' +
+      '<div class="media-head"><span class="media-ico">' + (isImg ? '🎨' : '🎬') + '</span><span class="media-label">' + label + '</span></div>' +
       '<div class="media-body">' +
-      '<div class="media-skel"><span class="media-spin"></span><span class="media-loading">' + (isImg ? 'Membuat gambar…' : 'Membuat video…') + '</span></div>' +
+      '<div class="media-skel"><span class="media-spin"></span><span class="media-loading">' + label + '</span></div>' +
       (isImg
         ? '<a class="media-thumb" href="' + url + '" target="_blank" rel="noopener" style="display:none"><img class="media-img" src="' + url + '" alt="' + esc(prompt) + '" /></a>'
-        : '<div class="media-video-wrap" style="display:none"><video class="media-vid" src="' + url + '" controls playsinline preload="metadata"></video></div>') +
-      '<div class="media-burns-wrap" style="display:none"><img class="media-burns" src="" alt="' + esc(prompt) + '" /></div>' +
+        : '<div class="media-burns-wrap" style="display:none"><img class="media-burns" src="' + url + '" alt="' + esc(prompt) + '" /></div>') +
       '</div>' +
       '<div class="media-caption">' + esc(prompt) + '</div>' +
       '<div class="media-actions">' +
-      '<a class="m-act link" href="' + url + '" target="_blank" rel="noopener" style="display:none">Buka asli</a>' +
-      '<button type="button" class="m-act dl" style="display:none">Unduh</button>' +
+      '<a class="m-act link" href="' + url + '" target="_blank" rel="noopener" style="display:none">Buka gambar</a>' +
       '</div>';
 
     const skel = card.querySelector('.media-skel');
     const thumb = card.querySelector('.media-thumb');
-    const videoWrap = card.querySelector('.media-video-wrap');
     const burnsWrap = card.querySelector('.media-burns-wrap');
     const link = card.querySelector('.link');
-    const dl = card.querySelector('.dl');
+    const img = card.querySelector(isImg ? '.media-img' : '.media-burns');
     let done = false;
 
     const showResult = function (ok) {
       if (done) return;
       done = true;
+      const lbl = card.querySelector('.media-label');
       if (ok) {
         if (skel) skel.style.display = 'none';
         if (thumb) thumb.style.display = '';
-        if (videoWrap) videoWrap.style.display = '';
+        if (burnsWrap) burnsWrap.style.display = '';
         if (link) link.style.display = '';
-        if (dl) dl.style.display = '';
-        const lbl = card.querySelector('.media-label');
-        if (lbl) lbl.textContent = isImg ? 'Gambar siap' : 'Video siap';
+        if (lbl) lbl.textContent = isImg ? 'Gambar siap' : 'Ilustrasi video siap';
         if (onStateChange) onStateChange(true);
       } else {
-        if (link) {
-          link.textContent = isImg ? 'Coba buka manual' : 'Coba buka manual (video)';
-          link.style.display = '';
+        if (link) link.style.display = '';
+        if (skel) {
+          skel.innerHTML = '<span class="media-err">Gagal memuat gambar. Provider mungkin sedang sibuk — coba lagi.</span>';
         }
-        if (dl) dl.style.display = 'none';
-        const lbl = card.querySelector('.media-label');
-        // Fallback untuk video: tampilkan gambar animasi dari prompt.
-        if (!isImg && fallbackImgUrl) {
-          if (skel) skel.style.display = 'none';
-          const burnsImg = card.querySelector('.media-burns');
-          if (burnsImg) {
-            burnsImg.src = fallbackImgUrl;
-            burnsWrap.style.display = '';
-          }
-          if (lbl) lbl.textContent = 'Video gagal — ilustrasi animasi';
-          if (onStateChange) onStateChange(true);
-        } else {
-          if (skel) skel.innerHTML = '<span class="media-err">' + (isImg ? 'Gagal memuat gambar' : 'Gagal memuat video') + '. Provider mungkin sedang sibuk — coba lagi.</span>';
-          if (lbl) lbl.textContent = isImg ? 'Gambar gagal' : 'Video gagal';
-          if (onStateChange) onStateChange(false);
-        }
+        if (lbl) lbl.textContent = isImg ? 'Gambar gagal' : 'Ilustrasi gagal';
+        if (onStateChange) onStateChange(false);
       }
     };
 
-    if (isImg) {
-      const img = card.querySelector('.media-img');
-      img.addEventListener('load', function () { showResult(true); });
-      img.addEventListener('error', function () { showResult(false); });
-    } else {
-      const vid = card.querySelector('.media-vid');
-      vid.addEventListener('loadedmetadata', function () { showResult(true); });
-      vid.addEventListener('error', function () { showResult(false); });
-      // Jangan menunggu lama bila video tidak kunjung siap.
-      setTimeout(function () {
-        if (!done && vid.readyState < 1) showResult(false);
-      }, 25000);
-    }
-
-    function dlAction() {
-      // Unduhan lintas-origin tidak dapat dibuat via blob (no-cors); buka
-      // URL asli di tab baru agar pengguna bisa menyimpannya.
-      window.open(url, '_blank');
-    }
-    if (dl) dl.addEventListener('click', dlAction);
+    img.addEventListener('load', function () { showResult(true); });
+    img.addEventListener('error', function () { showResult(false); });
 
     return card;
   }
@@ -305,10 +266,10 @@
   function renderMediaInto(msgEl, media) {
     if (!media || !msgEl) return;
     msgEl.inner.innerHTML = '';
-    msgEl.inner.appendChild(createMediaCard(media.kind, media.prompt, media.url, null,
-      media.kind === 'video' ? generateImage(media.prompt) : null));
-    if (media.kind === 'image' && msgEl.tag) msgEl.tag.querySelector('.model-tag').textContent = ' · Flux';
-    else if (msgEl.tag) msgEl.tag.querySelector('.model-tag').textContent = ' · Pollinations Video';
+    msgEl.inner.appendChild(createMediaCard(media.kind, media.prompt, media.url, null));
+    if (msgEl.tag) {
+      msgEl.tag.querySelector('.model-tag').textContent = media.kind === 'image' ? ' · Flux' : ' · Ilustrasi';
+    }
   }
 
   function fallbackCopy(text) {
@@ -408,76 +369,64 @@
 
 // Konfigurasi Model — sumber: https://github.com/zebbern/no-cost-ai
 // Model gratis yang aktif lewat backend proxy (server.js):
-//  - uncloseai (hermes.ai.unturf.com & qwen.ai.unturf.com) — Qwen 3.6 27B gratis, tanpa API key.
-//  - pollinations (text.openrouter.ai/api/v1) — GPT-OSS 20B (tier anonim).
-//  - OpenCode Zen (opencode.ai/zen) — model gratis tanpa API key, butuh X-Session-ID.
+//  - uncloseai (hermes.ai.unturf.com & qwen.ai.unturf.com) — Qwen 3.8 27B gratis, tanpa API key.
+//  - pollinations (text.pollinations.ai) — GPT-OSS 20B (tier anonim).
 //  - Free.ai (api.free.ai) — model open-weight gratis tanpa API key.
 // Model dipanggil via /api/chat (proxy CORS).
 const FREE_MODELS = [
-  'qwen3.6-27b',
+  'qwen3.8-27b',
   'gpt-oss-20b',
-  'nemotron-3.5-lightning-free',
-  'big-pickle',
-  'ling-3.0-flash-fin-free',
-  'nemotron-3-ultra-free',
-  'mimo-v2.5-free',
-  'qwen7b',
   'qwen3-8b',
 ];
 
 // Konfigurasi model → upstream (dipakai pada mode langsung GitHub Pages).
 // Provider yang menyediakan CORS lintas origin sehingga frontend statis bisa
 // memanggil API-nya langsung dari browser tanpa backend proxy:
-//  - uncloseai (hermes.ai.unturf.com, qwen.ai.unturf.com) — Qwen 3.6 27B, CORS '*' aktif.
-//  - Free.ai (api.free.ai) — model open-weight gratis, CORS origin dibatasi tapi aktif.
+//  - uncloseai (hermes.ai.unturf.com, qwen.ai.unturf.com) — CORS '*' aktif.
+//  - pollinations (text.pollinations.ai) — CORS '*', model alias `openai`.
+//  - Free.ai (api.free.ai) — CORS origin dicerminkan, hanya model self-hosted.
 // Model UI dipetakan ke nama model yang dikenal tiap upstream (mirip UPSTREAM_MODEL_MAP server).
 const DIRECT_UPSTREAMS = [
   'https://hermes.ai.unturf.com',
   'https://qwen.ai.unturf.com',
+  'https://text.pollinations.ai',
   'https://api.free.ai',
 ];
 const DIRECT_PAYLOAD = {
   'https://hermes.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
   'https://qwen.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
+  'https://text.pollinations.ai': {},
   'https://api.free.ai': {},
 };
+// uncloseai kini hanya melayani satu model: turboderp/Qwen3.8-27B-exl3.
+// pollinations mengenali alias `openai` (GPT-OSS 20B); free.ai hanya qwen7b/qwen3-8b.
+const UNCLOSEAI_MODEL = 'turboderp/Qwen3.8-27B-exl3';
 const DIRECT_MODEL_MAP = {
   'https://hermes.ai.unturf.com': {
-    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3.8-27b': UNCLOSEAI_MODEL,
+    'gpt-oss-20b': UNCLOSEAI_MODEL,
+    'qwen3-8b': UNCLOSEAI_MODEL,
   },
   'https://qwen.ai.unturf.com': {
-    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3.8-27b': UNCLOSEAI_MODEL,
+    'gpt-oss-20b': UNCLOSEAI_MODEL,
+    'qwen3-8b': UNCLOSEAI_MODEL,
+  },
+  'https://text.pollinations.ai': {
+    'qwen3.8-27b': 'openai',
+    'gpt-oss-20b': 'openai',
+    'qwen3-8b': 'openai',
   },
   'https://api.free.ai': {
-    'qwen3.6-27b': 'qwen7b',
+    'qwen3.8-27b': 'qwen7b',
     'gpt-oss-20b': 'qwen7b',
-    'nemotron-3.5-lightning-free': 'qwen7b',
-    'big-pickle': 'qwen7b',
-    'ling-3.0-flash-fin-free': 'qwen7b',
-    'nemotron-3-ultra-free': 'qwen7b',
-    'mimo-v2.5-free': 'qwen7b',
-    'qwen7b': 'qwen7b',
     'qwen3-8b': 'qwen3-8b',
   },
 };
 function directChatUrl(base) {
   const b = base.replace(/\/$/, '');
+  // pollinations menaruh endpoint OpenAI-compatible di `/openai`, bukan `/v1`.
+  if (b === 'https://text.pollinations.ai') return b + '/openai';
   return b + '/v1/chat/completions';
 }
 function directChat(messages, model) {
@@ -551,24 +500,21 @@ let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
 const api = function (path) { return backendInUse + path; };
 
 // Media generation (gambar & video).
-//  - Gambar: image.openrouter.ai/api/v1 (Flux, gratis tanpa API key, CORS aktif).
-//  - Video : video.openrouter.ai/api/v1 (apabila tersedia). URL yang dihasilkan
-//    langsung dipakai sebagai src <img>/<video> di browser.
-const IMAGE_ENDPOINT = 'https://image.openrouter.ai/api/v1/prompt/';
+//  - Gambar: image.pollinations.ai (Flux/Sana, gratis tanpa API key, CORS aktif).
+//    URL yang dihasilkan dipakai langsung sebagai src <img>.
+//  - Video : TIDAK ada provider gratis yang menyajikan video dari URL GET, jadi
+//    kartu video memakai jalur "ilustrasi animasi": gambar dari pollinations
+//    dengan efek Ken Burns (lihat createMediaCard).
+const IMAGE_ENDPOINT = 'https://image.pollinations.ai/prompt/';
 const IMAGE_WIDTH = 768;
 const IMAGE_HEIGHT = 768;
 const IMAGE_MODEL = 'flux';
-const VIDEO_ENDPOINT = 'https://video.openrouter.ai/api/v1/prompt/';
-const VIDEO_DURATION = 3; // detik
 
-function buildMediaUrl(kind, prompt) {
+function buildImageUrl(prompt) {
   const q = encodeURIComponent(prompt);
   const seed = Math.floor(Math.random() * 100000);
-  if (kind === 'image') {
-    return IMAGE_ENDPOINT + q + '?width=' + IMAGE_WIDTH + '&height=' + IMAGE_HEIGHT +
-      '&model=' + encodeURIComponent(IMAGE_MODEL) + '&nologo=true&seed=' + seed;
-  }
-  return VIDEO_ENDPOINT + q + '?duration=' + VIDEO_DURATION + '&nologo=true&seed=' + seed;
+  return IMAGE_ENDPOINT + q + '?width=' + IMAGE_WIDTH + '&height=' + IMAGE_HEIGHT +
+    '&model=' + encodeURIComponent(IMAGE_MODEL) + '&nologo=true&seed=' + seed;
 }
 
 const AI_TIMEOUT_MS = 60000;
@@ -649,19 +595,18 @@ async function modelChat(messages, model) {
   // Ulangi operasi sampai berhasil memberikan respons (kesalahan server/jaringan).
   // Jeda antar percobaan bertingkat: 1s, 2s, 3s… maksimum 5 detik.
   async function retryUntilResponse(fn, label) {
-    for (let attempt2 = 0; attempt2 < 3; attempt2++) {
+    for (let attempt = 1; ; attempt++) {
       try {
         return await fn();
       } catch (err) {
-        attempt2++;
-        if (attempt2 >= 3) throw err;
-        const delay = Math.min(attempt2, 5) * 1000;
+        if (attempt >= 3) throw err;
+        const delay = Math.min(attempt, 5) * 1000;
         setStatusIcon('err');
-        if (label) console.warn('[retry] ' + label + ' percobaan ke-' + attempt2 + ':', err.message);
+        if (label) console.warn('[retry] ' + label + ' percobaan ke-' + attempt + ':', err.message);
         await new Promise(function (r) { setTimeout(r, delay); });
         setStatusIcon('on');
       }
-  }
+    }
   }
 
 
@@ -847,18 +792,9 @@ function runOneModel(modelId, messages) {
     input.style.height = Math.min(220, Math.max(48, input.scrollHeight)) + 'px';
   }
 
-  // Hasilkan URL gambar dari teks via image.openrouter.ai/api/v1 (Flux, gratis).
-  // Catatan: browser TIDAK boleh fetch verifikasi ke domain ini — endpoint
-  // memblokir request yang membawa header Origin (403). `<img src>` memakai
-  // no-cors tanpa Origin sehingga berfungsi normal; kegagalan dideteksi via
-  // event onload/onerror pada elemen.
+  // Hasilkan URL gambar dari teks via image.pollinations.ai (Flux, gratis).
   function generateImage(prompt) {
-    return buildMediaUrl('image', prompt);
-  }
-
-  // Hasilkan URL video dari teks via video.openrouter.ai/api/v1 (bila tersedia).
-  function generateVideo(prompt) {
-    return buildMediaUrl('video', prompt);
+    return buildImageUrl(prompt);
   }
 
   async function onSend(rawText) {
@@ -882,28 +818,22 @@ function runOneModel(modelId, messages) {
     current.items.push({ role: 'user', content: text });
     addUserMessage(text);
 
-    // Mode gambar/video: alur tanpa chat model.
+    // Mode gambar/video: alur tanpa chat model. Keduanya memakai gambar
+    // pollinations; mode video menampilkannya sebagai ilustrasi beranimasi.
     if (mode === 'image' || mode === 'video') {
-      const typing = typingIndicator();
-      typing.remove();
-      const url = mode === 'image' ? generateImage(text) : generateVideo(text);
+      const url = generateImage(text);
       const cur = history.find(function (h) { return h.id === threadId; });
       if (!cur) return;
-      const content = (mode === 'image' ? '[Gambar] ' : '[Video] ') + text;
+      const content = (mode === 'image' ? '[Gambar] ' : '[Ilustrasi video] ') + text;
       cur.items.push({ role: 'assistant', content: content, media: { kind: mode, prompt: text, url: url } });
       const msgEl = createAssistantMessage(content);
       msgEl.inner.innerHTML = '';
-      let finished = false;
       const card = createMediaCard(mode, text, url, function (ok) {
-        if (finished) return;
-        finished = true;
-        if (ok) setStatus('on', 'terhubung');
-        else setStatus('err', 'gagal memuat media');
-      }, mode === 'video' ? generateImage(text) : null);
+        setStatus(ok ? 'on' : 'err', ok ? 'terhubung' : 'gagal memuat media');
+      });
       msgEl.inner.appendChild(card);
-      msgEl.tag.querySelector('.model-tag').textContent = ' · ' + (mode === 'image' ? 'Flux' : 'Pollinations Video');
-      if (msgEl.actions) msgEl.actions.style.display = '';
-      setStatus('on', mode === 'image' ? 'membuat gambar…' : 'membuat video…');
+      msgEl.tag.querySelector('.model-tag').textContent = mode === 'image' ? ' · Flux' : ' · Ilustrasi';
+      if (msgEl.actions) msgEl.actions.style.display = 'none';
       scrollDown();
       busy = false;
       sendBtn.disabled = false;
@@ -996,50 +926,11 @@ function runOneModel(modelId, messages) {
       ? 'Tampilkan panel'
       : 'Sembunyikan panel';
   });
-  suggestions.addEventListener('click', function (e) {
-    const btn = e.target.closest('button[data-prompt]');
-    if (btn) onSend(btn.getAttribute('data-prompt'));
-  });
-
-  // Tombol mode media di composer.
   if (mediaImageBtn) {
     mediaImageBtn.addEventListener('click', function () { setMediaMode(mediaMode === 'image' ? '' : 'image'); });
   }
   if (mediaVideoBtn) {
     mediaVideoBtn.addEventListener('click', function () { setMediaMode(mediaMode === 'video' ? '' : 'video'); });
-  }
-
-  // Chip "Buat Gambar/Buah Video" di layar sambutan.
-  document.querySelectorAll('.media-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      const m = chip.getAttribute('data-media');
-      setMediaMode(m);
-      if (window.innerWidth <= 768) layoutEl.classList.add('collapsed');
-    });
-  });
-
-  const modelListEl = document.getElementById('modelNames');
-  const modelCountEl = document.getElementById('modelCount');
-
-  function renderModelNames(ids, activeIds) {
-    modelListEl.innerHTML = '';
-    ids.forEach(function (id) {
-      const active = activeIds.indexOf(id) !== -1;
-      const pill = document.createElement('button');
-      pill.type = 'button';
-      pill.className = 'mname' + (active ? ' active' : ' locked');
-      pill.textContent = id;
-      pill.title = active ? 'Siap dipakai' : 'Provider belum terhubung';
-      pill.dataset.active = active ? '1' : '0';
-      pill.addEventListener('click', function () { setModel(id); });
-      modelListEl.appendChild(pill);
-    });
-    modelCountEl.textContent = ids.length + ' model siap pakai';
-  }
-
-  function setModel(id) {
-    model.value = id;
-    model.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function populateModelSelect(allIds, usableIds) {
@@ -1063,7 +954,6 @@ function runOneModel(modelId, messages) {
   }
 
 function loadModels() {
-  renderModelNames(FREE_MODELS, FREE_MODELS);
   populateModelSelect(FREE_MODELS, FREE_MODELS);
   setStatus('on', 'terhubung');
 }
