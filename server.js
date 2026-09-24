@@ -7,10 +7,10 @@ const PORT = Number(process.env.PORT) || 12000;
 // Upstream OpenAI-compatible — model gratis dari daftar no-cost-ai
 // (https://github.com/zebbern/no-cost-ai), tanpa API key:
 //  1. uncloseai  (hermes.ai.unturf.com + qwen.ai.unturf.com) — Qwen 3.6 27B, bebas biaya.
-//  2. pollinations (text.pollinations.ai) — GPT-OSS 20B, tier anonim.
+//  2. pollinations (text.openrouter.ai/api/v1) — GPT-OSS 20B, tier anonim.
 // Cadangan tetap: OpenCode Zen (opencode.ai/zen, butuh X-Session-ID) dan
 // freeapi (api.free.ai, model open-weight gratis).
-const UPSTREAM = process.env.UPSTREAM || 'https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai';
+const UPSTREAM = process.env.UPSTREAM || 'https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.openrouter.ai/api/v1,https://opencode.ai/zen,https://api.free.ai';
 // Pemetaan model per upstream: saat failover tiba di upstream berikutnya,
 // model yang tak dikenal di sana dipetakan ke model yang tersedia.
 // Gunanya: model UI (mis. qwen3.6-27b) tidak ada di provider lain — peta ke
@@ -38,7 +38,7 @@ const UPSTREAM_MODEL_MAP = {
     'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
     'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
   },
-  'https://text.pollinations.ai': {
+  'https://text.openrouter.ai/api/v1': {
     'qwen3.6-27b': 'openai',
     'gpt-oss-20b': 'openai',
     'nemotron-3.5-lightning-free': 'openai',

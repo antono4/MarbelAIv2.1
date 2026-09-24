@@ -409,7 +409,7 @@
 // Konfigurasi Model — sumber: https://github.com/zebbern/no-cost-ai
 // Model gratis yang aktif lewat backend proxy (server.js):
 //  - uncloseai (hermes.ai.unturf.com & qwen.ai.unturf.com) — Qwen 3.6 27B gratis, tanpa API key.
-//  - pollinations (text.pollinations.ai) — GPT-OSS 20B (tier anonim).
+//  - pollinations (text.openrouter.ai/api/v1) — GPT-OSS 20B (tier anonim).
 //  - OpenCode Zen (opencode.ai/zen) — model gratis tanpa API key, butuh X-Session-ID.
 //  - Free.ai (api.free.ai) — model open-weight gratis tanpa API key.
 // Model dipanggil via /api/chat (proxy CORS).
@@ -551,14 +551,14 @@ let backendInUse = FRONTEND_OVERRIDE || DEFAULT_BACKEND;
 const api = function (path) { return backendInUse + path; };
 
 // Media generation (gambar & video).
-//  - Gambar: image.pollinations.ai (Flux, gratis tanpa API key, CORS aktif).
-//  - Video : video.pollinations.ai (apabila tersedia). URL yang dihasilkan
+//  - Gambar: image.openrouter.ai/api/v1 (Flux, gratis tanpa API key, CORS aktif).
+//  - Video : video.openrouter.ai/api/v1 (apabila tersedia). URL yang dihasilkan
 //    langsung dipakai sebagai src <img>/<video> di browser.
-const IMAGE_ENDPOINT = 'https://image.pollinations.ai/prompt/';
+const IMAGE_ENDPOINT = 'https://image.openrouter.ai/api/v1/prompt/';
 const IMAGE_WIDTH = 768;
 const IMAGE_HEIGHT = 768;
 const IMAGE_MODEL = 'flux';
-const VIDEO_ENDPOINT = 'https://video.pollinations.ai/prompt/';
+const VIDEO_ENDPOINT = 'https://video.openrouter.ai/api/v1/prompt/';
 const VIDEO_DURATION = 3; // detik
 
 function buildMediaUrl(kind, prompt) {
@@ -847,7 +847,7 @@ function runOneModel(modelId, messages) {
     input.style.height = Math.min(220, Math.max(48, input.scrollHeight)) + 'px';
   }
 
-  // Hasilkan URL gambar dari teks via image.pollinations.ai (Flux, gratis).
+  // Hasilkan URL gambar dari teks via image.openrouter.ai/api/v1 (Flux, gratis).
   // Catatan: browser TIDAK boleh fetch verifikasi ke domain ini — endpoint
   // memblokir request yang membawa header Origin (403). `<img src>` memakai
   // no-cors tanpa Origin sehingga berfungsi normal; kegagalan dideteksi via
@@ -856,7 +856,7 @@ function runOneModel(modelId, messages) {
     return buildMediaUrl('image', prompt);
   }
 
-  // Hasilkan URL video dari teks via video.pollinations.ai (bila tersedia).
+  // Hasilkan URL video dari teks via video.openrouter.ai/api/v1 (bila tersedia).
   function generateVideo(prompt) {
     return buildMediaUrl('video', prompt);
   }

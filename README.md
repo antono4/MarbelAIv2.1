@@ -75,7 +75,7 @@ Server menyajikan file statis (`index.html`, `app.js`, `styles.css`) sekaligus m
 | Variabel | Default | Deskripsi |
 |---|---|---|
 | `PORT` | `12000` | Port HTTP server |
-| `UPSTREAM` | `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
+| `UPSTREAM` | `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.openrouter.ai,https://opencode.ai/zen,https://api.free.ai` | Daftar upstream OpenAI-compatible gratis, dipisah koma (failover berurutan) |
 | `UPSTREAM_PREFIX` | `''` | Prefix path upstream (untuk Zen cukup set base, otomatis `/v1`) |
 | `DEFAULT_MODEL` | `qwen3.6-27b` | Model default bila klien tidak mengirim |
 | `MODELS_LIST` | daftar model gratis | Daftar model yang dilayani `/api/models` |

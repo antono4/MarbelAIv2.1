@@ -58,7 +58,7 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 
 ## server.js (statis + proxy)
 
-- `server.js` = proxy OpenAI-compatible dengan **failover berurutan** antar upstream (`UPSTREAM`, dipisah koma). Default: `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://opencode.ai/zen,https://api.free.ai` (no-cost-ai untuk uncloseai/pollinations, cadangan Zen/Free.ai).
+- `server.js` = proxy OpenAI-compatible dengan **failover berurutan** antar upstream (`UPSTREAM`, dipisah koma). Default: `https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.openrouter.ai,https://opencode.ai/zen,https://api.free.ai` (no-cost-ai untuk uncloseai/pollinations, cadangan Zen/Free.ai).
 - Zen butuh header `X-Session-ID` → server mengrotasi pool (`SESSION_POOL_SIZE`, default 16).
 - uncloseai (vLLM/Qwen) → server mengirim `chat_template_kwargs.enable_thinking=false` agar jawaban bersih.
 - URL upstream dirakit via `chatUrl`/`modelsUrl`: base `.../zen` → `/zen/v1/chat/completions`; base lain → `/v1/chat/completions`.
