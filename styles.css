@@ -7,13 +7,13 @@
   --bg-soft:#f2f2f0;
   --line:#e6e6e2;
   --text:#2b2438;
-  --muted:#8b8199;
-  --accent:#6c5ce7;
-  --accent-2:#00b8a9;
+  --muted:#6a6079;
+  --accent:#5b4bd6;
+  --accent-2:#0f8f83;
   --accent-ink:#ffffff;
   --mine:#f1edff;
-  --ok:#00b8a9;
-  --err:#e5533d;
+  --ok:#0e8d80;
+  --err:#c2351f;
   --code:#0b6b5c;
   --code-bg:#eef7f0;
   --panel:#ffffff;
@@ -22,7 +22,8 @@
   --choice:#ffffff;
   --composer:#ffffff;
   --shadow:rgba(40,30,80,.08);
-  --font-body:"Plus Jakarta Sans","Inter","Segoe UI",system-ui,sans-serif;
+  --aurora-mix:#ffffff;
+  --font-body:"Plus Jakarta Sans","Manrope","Inter","Segoe UI",system-ui,sans-serif;
   --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --mono:var(--font-mono);
 }
@@ -33,13 +34,13 @@ html[data-theme="dark"] {
   --bg-soft:#191924;
   --line:#2c2c3e;
   --text:#eceaf4;
-  --muted:#9a92ad;
-  --accent:#8b7cee;
+  --muted:#a49cba;
+  --accent:#a99df4;
   --accent-2:#2dd4c4;
-  --accent-ink:#ffffff;
+  --accent-ink:#141122;
   --mine:#232332;
   --ok:#2dd4c4;
-  --err:#ff6b56;
+  --err:#ff8570;
   --code:#4fe0c8;
   --code-bg:#16211f;
   --panel:#1c1c29;
@@ -48,10 +49,19 @@ html[data-theme="dark"] {
   --choice:#1c1c29;
   --composer:#1c1c29;
   --shadow:rgba(0,0,0,.35);
+  --aurora-mix:#0b0b14;
 }
 
 * { box-sizing:border-box; margin:0; padding:0; }
 html,body { height:100%; }
+
+/* Teks khusus pembaca layar. */
+.sr-only {
+  position:absolute; width:1px; height:1px;
+  padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0 0 0 0); clip-path:inset(50%);
+  white-space:nowrap; border:0;
+}
 
 body {
   background:var(--bg);
@@ -64,9 +74,10 @@ body {
 /* latar halus */
 .bg-scene { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .aurora { position:absolute; border-radius:50%; filter:blur(90px); opacity:.28; }
-.a1 { width:440px; height:440px; background:color-mix(in srgb,var(--accent) 24%,white); top:-160px; left:-120px; }
-.a2 { width:460px; height:460px; background:color-mix(in srgb,var(--accent-2) 20%,white); top:-100px; right:-160px; }
-.a3 { width:520px; height:520px; background:color-mix(in srgb,var(--accent) 12%,white); bottom:-280px; left:30%; }
+html[data-theme="dark"] .aurora { opacity:.22; }
+.a1 { width:440px; height:440px; background:color-mix(in srgb,var(--accent) 24%,var(--aurora-mix)); top:-160px; left:-120px; }
+.a2 { width:460px; height:460px; background:color-mix(in srgb,var(--accent-2) 20%,var(--aurora-mix)); top:-100px; right:-160px; }
+.a3 { width:520px; height:520px; background:color-mix(in srgb,var(--accent) 12%,var(--aurora-mix)); bottom:-280px; left:30%; }
 
 /* ================== Layout ================== */
 .layout {
@@ -192,8 +203,26 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   font-size:11.5px; color:var(--muted); font-weight:700;
   letter-spacing:.07em; text-transform:uppercase;
   border-top:1px solid var(--line);
-  margin-top:12px;
+  margin-top:auto;
 }
+
+/* ================== Scrim sidebar (mobile) ================== */
+/* Scrim berada di dalam `.main` dan hanya menumpuk di atas area percakapan
+   (z-index 2), sehingga topbar (z-index 3) tetap bisa diklik — tombol ☰ dan
+   scrim sama-sama bisa menutup sidebar. Sidebar sendiri ada di `.layout`
+   dengan z-index 20, jadi selalu di atas scrim. */
+.scrim {
+  position:absolute; inset:0;
+  display:none;
+  background:rgba(20,16,36,.42);
+  backdrop-filter:blur(2px);
+  border:0;
+  opacity:0; visibility:hidden;
+  transition:opacity .22s ease,visibility .22s ease;
+  z-index:2;
+  cursor:pointer;
+}
+.scrim.show { opacity:1; visibility:visible; }
 
 /* ================== Main ================== */
 .main { flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; position:relative; z-index:1; }
@@ -311,6 +340,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .welcome-inner {
   max-width:640px; width:100%; text-align:center;
   padding:56px 10px 8px;
+  margin:auto;
 }
 .eyebrow {
   display:inline-flex; align-items:center; gap:8px;
@@ -326,8 +356,10 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   -webkit-background-clip:text; background-clip:text;
   -webkit-text-fill-color:transparent; color:transparent;
 }
+/* Deskripsi, saran topik, dan daftar model sengaja disembunyikan di layar
+   sambutan (lihat riwayat: "sembunyikan deskripsi, saran topik, dan daftar
+   model di layar selamat datang"). */
 .welcome-sub { display:none; }
-
 .slider { display:none; }
 .model-section { display:none; }
 .track { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; width:100%; }
@@ -351,6 +383,8 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .track .sc { font-size:16px; flex:0 0 auto; }
 
 /* ================== model list ================== */
+/* Daftar model dipakai oleh pemilih di composer; section-nya sendiri tetap
+   disembunyikan di layar sambutan (lihat aturan .model-section di atas). */
 .model-section { margin-top:26px; text-align:left; }
 .ms-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
 .ms-title { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:800; }
@@ -375,12 +409,15 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 
 /* ================== messages (kolom tengah, ala Claude) ================== */
 .messages {
+  --thread-max:780px;
   flex:1; min-height:0;
   overflow-y:auto;
-  padding:14px clamp(16px,5%,72px) 20px;
+  padding:14px max(16px, calc((100% - var(--thread-max)) / 2)) 20px;
   display:flex; flex-direction:column; gap:24px;
 }
 .messages:empty { flex:0 0 auto; padding:0; min-height:0; }
+/* Beri ruang agar pesan terakhir tidak tertutup badge status yang mengambang. */
+.thread-wrap:has(.active-badge.show) .messages { padding-bottom:76px; }
 .msg { max-width:92%; line-height:1.75; font-size:15.5px; animation:rise .32s ease both; }
 
 .msg.user {
@@ -417,6 +454,8 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .msg .inner { width:100%; max-width:100%; }
 
 .msg code { font-family:var(--mono); font-size:.94em; background:var(--code-bg); color:var(--code); padding:3px 8px; border-radius:6px; }
+.msg .code-block { margin:2px 0; }
+.msg .code-block pre { margin:0; }
 .msg pre {
   background:var(--panel);
   border:1px solid var(--line);
@@ -519,7 +558,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .mc-tx small { font-size:12px; color:var(--muted); }
 
 /* tombol mode media di composer */
-.cf-actions { display:flex; align-items:center; gap:8px; }
+.cf-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
 .media-btn {
   display:inline-flex; align-items:center; gap:6px;
   background:var(--panel);
@@ -593,7 +632,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   flex:0 0 auto;
   box-shadow:0 2px 18px var(--shadow);
   transition:border-color .2s ease,box-shadow .2s ease;
-
 }
 .composer:focus-within { border-color:var(--accent); box-shadow:0 2px 22px var(--shadow); }
 
@@ -610,9 +648,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 }
 .composer textarea::placeholder { color:var(--muted); }
 
-.composer-footer { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; margin-top:8px; }
-.cf-left { display:flex; align-items:center; }
-.custom-select { display:flex; align-items:center; gap:9px; }
+.composer-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px; flex-wrap:wrap; }
+.cf-left { display:flex; align-items:center; min-width:0; }
+.custom-select { display:flex; align-items:center; gap:9px; min-width:0; }
 .cs-label { font-size:12px; color:var(--muted); font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
 
 .custom-select select {
@@ -625,10 +663,11 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   font-family:var(--mono);
   cursor:pointer;
   max-width:210px;
+  min-width:0;
   transition:border-color .15s ease;
 }
 .custom-select select:hover { border-color:var(--accent); }
-.custom-select select:focus { outline:none; border-color:var(--accent); }
+.custom-select select:focus { border-color:var(--accent); }
 
 .send {
   display:grid; place-items:center;
@@ -643,20 +682,44 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 .send:active { transform:translateY(0) scale(.95); }
 .send:disabled { opacity:.45; cursor:not-allowed; transform:none; }
 
+/* ================== Fokus keyboard ================== */
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+.composer textarea:focus-visible { outline:none; }
+.composer:has(textarea:focus-visible) { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent); }
+
+/* Hormati preferensi pengguna yang mematikan animasi. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+
 /* ================== responsive ================== */
 @media (max-width:768px) {
   html,body { overflow:hidden; }
   body { overflow-x:hidden; }
 
+  /* Sidebar jadi panel geser (off-canvas). Kelas `collapsed` tetap berarti
+     "sidebar disembunyikan", sama seperti di desktop, sehingga tombol ☰
+     membuka panel dan scrim menutupnya. */
   .sidebar {
     position:fixed; top:0; left:0; bottom:0;
     width:min(280px,82vw);
     transform:translateX(-102%); transition:transform .22s ease;
-
+    visibility:hidden;
     z-index:20;
     box-shadow:0 0 40px var(--shadow);
   }
-  .layout.collapsed .sidebar { display:flex; transform:translateX(0); }
+  .layout:not(.collapsed) .sidebar { display:flex; transform:translateX(0); visibility:visible; }
+  .scrim { display:block; }
 
   .topbar { padding:10px 12px; gap:8px; }
   .header-pill { display:none; }
@@ -669,7 +732,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   .welcome-sub { font-size:13.5px; margin-bottom:18px; }
   .model-list { max-height:130px; }
 
-  .slider { max-width:100%; }
   .track button { padding:10px 15px; font-size:12.5px; }
 
   .messages { flex:1 1 100%; padding:12px 14px 10px; -webkit-overflow-scrolling:touch; }
@@ -680,7 +742,8 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   .composer { margin:6px 10px max(12px, env(safe-area-inset-bottom)); width:auto; border-radius:14px; padding:10px; }
   .composer-footer { gap:8px; }
   .cs-label { display:none; }
-  .custom-select select { max-width:140px; padding:7px 9px; font-size:11.5px; }
+  .custom-select { flex:1 1 auto; }
+  .custom-select select { width:100%; max-width:140px; padding:7px 9px; font-size:11.5px; }
   .send { width:38px; height:38px; border-radius:10px; }
   .cf-actions { gap:6px; }
   .media-btn { padding:7px 10px; font-size:12px; }
@@ -689,4 +752,12 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   .media-card { max-width:100%; }
   .media-suggest { justify-content:flex-start; }
   .media-chip { flex:1 1 100%; max-width:100%; }
+}
+
+/* Layar pendek (mis. ponsel lanskap): rapatkan padding agar konten tidak terpotong. */
+@media (max-height:560px) {
+  .welcome { align-items:flex-start; }
+  .welcome-inner { padding:18px 10px 8px; }
+  .welcome h2 { margin-bottom:8px; }
+  .media-suggest { margin-top:10px; }
 }
