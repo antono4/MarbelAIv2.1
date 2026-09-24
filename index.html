@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Marbel AI — Chat AI</title>
-<meta name="description" content="Marbel AI — mengobrol dengan beragam model AI." />
+<meta name="description" content="Marbel AI — ruang kerja AI untuk mengobrol, membuat gambar, dan membuat ilustrasi video." />
 <meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#12121c" media="(prefers-color-scheme: dark)" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236c5ce7'/%3E%3Cstop offset='1' stop-color='%2300b8a9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='10' fill='url(%23g)'/%3E%3Cpath fill='%23fff' d='M16 5l2.3 6.9a2.4 2.4 0 0 0 1.5 1.5L26.7 16l-6.9 2.3a2.4 2.4 0 0 0-1.5 1.5L16 26.7l-2.3-6.9a2.4 2.4  0 0 0-1.5-1.5L5.3 16l6.9-2.3a2.4 2.4 0 0 0-1.5-1.5L16 5z'/%3E%3Ccircle cx='24.5' cy='24.5' r='2.2' fill='%23fff'/%3E%3C/svg%3E" />
@@ -22,7 +22,6 @@
   </div>
 
   <div class="layout">
-    <h1 class="sr-only">Marbel AI — chat dengan beragam model AI</h1>
     <!-- ============ Sidebar kiri: brand + percakapan ============ -->
     <aside class="sidebar" id="sidebar" aria-label="Riwayat percakapan">
       <div class="sidebar-head">
@@ -96,61 +95,6 @@
             <div class="welcome-inner">
               <span class="eyebrow">✦ Selamat datang di Marbel AI</span>
               <h2>Mari mulai <span class="grad">berkarya</span></h2>
-              <p class="welcome-sub">
-                Mengobrol dengan <b>9 model AI gratis</b> sekaligus yang saling melengkapi<br/>
-                untuk jawaban yang lebih akurat dan cepat. Pilih topik di bawah, atau langsung tulis pertanyaan Anda.
-              </p>
-              <div class="slider">
-                <div class="track" id="suggestions">
-                  <button data-prompt="Tanyakan apa saja — ilmu, ide, atau hal sehari-hari">
-                    <span class="sc">💡</span>Tanyakan apa saja
-                  </button>
-                  <button data-prompt="Bantu tulis, rapikan, atau jelaskan sesuatu">
-                    <span class="sc">✍️</span>Bantu tulis, rapikan, atau jelaskan
-                  </button>
-                  <button data-prompt="Ringkas artikel, dokumen, atau ide panjang">
-                    <span class="sc">📝</span>Ringkas artikel, dokumen, atau ide
-                  </button>
-                  <button data-prompt="Terjemahkan, carikan fakta, atau jelaskan istilah">
-                    <span class="sc">🔍</span>Terjemahkan atau carikan fakta
-                  </button>
-                  <button data-prompt="Tulis ide cerita atau konsep kreatif baru">
-                    <span class="sc">🎨</span>Tulis ide kreatif baru
-                  </button>
-                  <button data-prompt="Buatkan tugas sekolah atau materi belajar yang mudah dipahami">
-                    <span class="sc">📚</span>Bantu tugas sekolah &amp; belajar
-                  </button>
-                  <button data-prompt="Jelaskan langkah-langkah memasak atau resep yang mudah diikuti">
-                    <span class="sc">🍳</span>Ide resep &amp; memasak
-                  </button>
-                  <button data-prompt="Bantu atur jadwal, prioritas, atau daftar kegiatan harian">
-                    <span class="sc">🗓️</span>Atur jadwal &amp; prioritas
-                  </button>
-                  <button data-prompt="Sarankan ide hobi, olahraga, atau kegiatan menyenangkan">
-                    <span class="sc">⚽</span>Ide hobi &amp; kegiatan
-                  </button>
-                  <button data-prompt="Tulis doa, kata-kata penyemangat, atau pesan yang tulus untuk orang tersayang">
-                    <span class="sc">💌</span>Kata-kata &amp; pesan tulus
-                  </button>
-                </div>
-              </div>
-              <div class="media-suggest" aria-label="Pembuat media">
-                <button data-media="image" class="media-chip">
-                  <span class="mc-ico">🎨</span>
-                  <span class="mc-tx"><b>Buat Gambar</b><small>Ubah teks jadi gambar AI</small></span>
-                </button>
-                <button data-media="video" class="media-chip">
-                  <span class="mc-ico">🎬</span>
-                  <span class="mc-tx"><b>Buat Video</b><small>Ubah teks jadi video AI</small></span>
-                </button>
-              </div>
-              <div class="model-section">
-                <div class="ms-head">
-                  <span class="ms-title">Semua Model</span>
-                  <span id="modelCount" class="ms-count">memuat…</span>
-                </div>
-                <div id="modelNames" class="model-list"></div>
-              </div>
             </div>
           </div>
 
@@ -175,14 +119,8 @@
               <span class="cs-label">Model</span>
               <select id="model">
                 <option value="semua" selected>Auto Model (Tercepat)</option>
-                <option value="qwen3.6-27b">qwen3.6-27b</option>
+                <option value="qwen3.8-27b">qwen3.8-27b</option>
                 <option value="gpt-oss-20b">gpt-oss-20b</option>
-                <option value="nemotron-3.5-lightning-free">nemotron-3.5-lightning-free</option>
-                <option value="big-pickle">big-pickle</option>
-                <option value="ling-3.0-flash-fin-free">ling-3.0-flash-fin-free</option>
-                <option value="nemotron-3-ultra-free">nemotron-3-ultra-free</option>
-                <option value="mimo-v2.5-free">mimo-v2.5-free</option>
-                <option value="qwen7b">qwen7b</option>
                 <option value="qwen3-8b">qwen3-8b</option>
               </select>
             </label>
@@ -192,7 +130,7 @@
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M20 15l-5-5-8 8"/></svg>
               <span>Gambar</span>
             </button>
-            <button type="button" id="mediaVideo" class="media-btn" data-mode="video" title="Buat video dari teks" aria-pressed="false">
+            <button type="button" id="mediaVideo" class="media-btn" data-mode="video" title="Buat ilustrasi video dari teks" aria-pressed="false">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="14" height="14" rx="3"/><path d="M16.5 10.5l5-3v9l-5-3z"/></svg>
               <span>Video</span>
             </button>

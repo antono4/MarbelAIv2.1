@@ -6,65 +6,38 @@ const path = require('path');
 const PORT = Number(process.env.PORT) || 12000;
 // Upstream OpenAI-compatible — model gratis dari daftar no-cost-ai
 // (https://github.com/zebbern/no-cost-ai), tanpa API key:
-//  1. uncloseai  (hermes.ai.unturf.com + qwen.ai.unturf.com) — Qwen 3.6 27B, bebas biaya.
-//  2. pollinations (text.openrouter.ai/api/v1) — GPT-OSS 20B, tier anonim.
-// Cadangan tetap: OpenCode Zen (opencode.ai/zen, butuh X-Session-ID) dan
-// freeapi (api.free.ai, model open-weight gratis).
-const UPSTREAM = process.env.UPSTREAM || 'https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.openrouter.ai/api/v1,https://opencode.ai/zen,https://api.free.ai';
+//  1. uncloseai  (hermes.ai.unturf.com + qwen.ai.unturf.com) — Qwen 3.8 27B, bebas biaya.
+//  2. pollinations (text.pollinations.ai) — GPT-OSS 20B, tier anonim.
+// Cadangan tetap: freeapi (api.free.ai, model open-weight gratis).
+// Catatan: OpenCode Zen dibuang karena free tier-nya kini menolak pemakaian di
+// luar klien OpenCode ("can only be used from within OpenCode").
+const UPSTREAM = process.env.UPSTREAM || 'https://hermes.ai.unturf.com,https://qwen.ai.unturf.com,https://text.pollinations.ai,https://api.free.ai';
 // Pemetaan model per upstream: saat failover tiba di upstream berikutnya,
 // model yang tak dikenal di sana dipetakan ke model yang tersedia.
-// Gunanya: model UI (mis. qwen3.6-27b) tidak ada di provider lain — peta ke
+// Gunanya: model UI (mis. qwen3.8-27b) tidak ada di provider lain — peta ke
 // model yang tersedia di sana agar failover tetap menghasilkan jawaban.
+// uncloseai kini hanya melayani satu model: turboderp/Qwen3.8-27B-exl3.
+const UNCLOSEAI_MODEL = 'turboderp/Qwen3.8-27B-exl3';
 const UPSTREAM_MODEL_MAP = {
   'https://hermes.ai.unturf.com': {
-    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3.8-27b': UNCLOSEAI_MODEL,
+    'gpt-oss-20b': UNCLOSEAI_MODEL,
+    'qwen3-8b': UNCLOSEAI_MODEL,
   },
   'https://qwen.ai.unturf.com': {
-    'qwen3.6-27b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'gpt-oss-20b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3.5-lightning-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'big-pickle': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'ling-3.0-flash-fin-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'nemotron-3-ultra-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'mimo-v2.5-free': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen7b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
-    'qwen3-8b': 'Lorbus/Qwen3.6-27B-int4-AutoRound',
+    'qwen3.8-27b': UNCLOSEAI_MODEL,
+    'gpt-oss-20b': UNCLOSEAI_MODEL,
+    'qwen3-8b': UNCLOSEAI_MODEL,
   },
-  'https://text.openrouter.ai/api/v1': {
-    'qwen3.6-27b': 'openai',
+  'https://text.pollinations.ai': {
+    'qwen3.8-27b': 'openai',
     'gpt-oss-20b': 'openai',
-    'nemotron-3.5-lightning-free': 'openai',
-    'big-pickle': 'openai',
-    'ling-3.0-flash-fin-free': 'openai',
-    'nemotron-3-ultra-free': 'openai',
-    'mimo-v2.5-free': 'openai',
-    'qwen7b': 'openai',
     'qwen3-8b': 'openai',
   },
   'https://api.free.ai': {
-    'qwen3.6-27b': 'qwen7b',
+    'qwen3.8-27b': 'qwen7b',
     'gpt-oss-20b': 'qwen7b',
-    'nemotron-3.5-lightning-free': 'qwen7b',
-    'big-pickle': 'qwen7b',
-    'ling-3.0-flash-fin-free': 'qwen7b',
-    'nemotron-3-ultra-free': 'qwen7b',
-    'mimo-v2.5-free': 'qwen7b',
-    'qwen7b': 'qwen7b',
     'qwen3-8b': 'qwen3-8b',
-  },
-  'https://opencode.ai/zen': {
-    'qwen3.6-27b': 'nemotron-3.5-lightning-free',
-    'gpt-oss-20b': 'nemotron-3.5-lightning-free',
-    'qwen7b': 'nemotron-3.5-lightning-free',
-    'qwen3-8b': 'nemotron-3.5-lightning-free',
   },
 };
 // Payload tambahan per upstream (dipakai agar model memberi jawaban bersih):
@@ -75,18 +48,18 @@ const UPSTREAM_PAYLOAD = {
   'https://hermes.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
   'https://qwen.ai.unturf.com': { chat_template_kwargs: { enable_thinking: false } },
 };
-// Path prefix upstream. Zen menaruh API di `/zen/v1/...`, sehingga saat
-// UPSTREAM hanya host (`https://opencode.ai`), set UPSTREAM_PREFIX='/zen'.
+// Path prefix upstream (dipakai bila upstream menaruh API di sub-path,
+// mis. host `https://contoh.ai` dengan UPSTREAM_PREFIX='/zen').
 const UPSTREAM_PREFIX = process.env.UPSTREAM_PREFIX || '';
 function chatUrl(base) {
   const b = base.replace(/\/$/, '');
-  // Jika base sudah mengandung '/zen' dan prefix kosong, tambahkan '/v1'.
-  if (!UPSTREAM_PREFIX && /\/zen$/.test(b)) return b + '/v1/chat/completions';
+  // pollinations menaruh endpoint OpenAI-compatible di `/openai`, bukan `/v1`.
+  if (b === 'https://text.pollinations.ai') return b + '/openai';
   return b + UPSTREAM_PREFIX + '/v1/chat/completions';
 }
 function modelsUrl(base) {
   const b = base.replace(/\/$/, '');
-  if (!UPSTREAM_PREFIX && /\/zen$/.test(b)) return b + '/v1/models';
+  if (b === 'https://text.pollinations.ai') return b + '/models';
   return b + UPSTREAM_PREFIX + '/v1/models';
 }
 // Daftar upstream cadangan, dipisah koma. Server mencoba berurutan: jika
@@ -97,24 +70,8 @@ function pickTransport(url) { return url.startsWith('https://') ? https : http; 
 const API_KEY = process.env.API_KEY || '';
 const USE_SSE = String(process.env.USE_SSE || '1');
 // Mode proxy: default selalu `stream:false` (JSON biasa) demi keandalan dengan
-// model gratis Zen. Bisa diubah via env bila upstream pendukung SSE stabil.
+// model gratis. Bisa diubah via env bila upstream pendukung SSE stabil.
 const FORCE_NO_STREAM = String(process.env.FORCE_NO_STREAM || '1');
-// Session ID untuk free tier Zen (OpenCode): tanpa header ini, model gratis
-// ditolak dengan "MissingSessionID". Dipakai bergiliran dari satu pool agar
-// kuota harian tiap sesi tidak cepat habis; override via env bila perlu.
-const SESSION_POOL_SIZE = Number(process.env.SESSION_POOL_SIZE || 16);
-function makeSessionId(seed) {
-  return 'marbelai-' + seed + '-' + Math.random().toString(36).slice(2, 10);
-}
-const SESSION_POOL = Array.from({ length: SESSION_POOL_SIZE }, function (_, i) {
-  return makeSessionId(i);
-});
-let sessionCursor = 0;
-function pickSessionId() {
-  const id = SESSION_POOL[sessionCursor % SESSION_POOL.length];
-  sessionCursor++;
-  return id;
-}
 // Allow cross-origin calls (e.g. the GitHub Pages statically-served UI) to reach
 // this backend's /api/chat. Restrict with a specific origin for production if desired.
 const ALLOW_ORIGIN = process.env.ALLOW_ORIGIN || '*';
@@ -124,10 +81,10 @@ let modelsCache = null;
 let modelsCacheAt = 0;
 
 // Daftar model gratis (dari no-cost-ai) yang diizinkan lewat proxy.
-// qwen3.6-27b & gpt-oss-20b dari uncloseai/pollinations (no-cost-ai);
-// model Zen/Free.ai tetap dipakai sebagai cadangan saat failover.
+// qwen3.8-27b & gpt-oss-20b dari uncloseai/pollinations (no-cost-ai);
+// model Free.ai tetap dipakai sebagai cadangan saat failover.
 const DEFAULT_MODELS = (
-  process.env.MODELS_LIST || 'qwen3.6-27b,gpt-oss-20b,nemotron-3.5-lightning-free,big-pickle,ling-3.0-flash-fin-free,nemotron-3-ultra-free,mimo-v2.5-free,qwen7b,qwen3-8b'
+  process.env.MODELS_LIST || 'qwen3.8-27b,gpt-oss-20b,qwen3-8b'
 ).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 
 const ROOT = __dirname;
@@ -135,7 +92,7 @@ const ROOT = __dirname;
 const CORS_HEADERS = {
   'access-control-allow-origin': ALLOW_ORIGIN,
   'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'Content-Type, Authorization, X-Session-ID',
+  'access-control-allow-headers': 'Content-Type, Authorization',
 };
 
 // Header keamanan dasar yang dipasang di semua respons (statis & API).
@@ -196,7 +153,7 @@ function proxyOpenAI(req, res) {
       // Model wajib bagi upstream: isi default bila klien tidak mengirim/kosong.
 
       if (!payload.model || typeof payload.model !== 'string' || !payload.model.trim()) {
-        payload.model = process.env.DEFAULT_MODEL || 'qwen3.6-27b';
+        payload.model = process.env.DEFAULT_MODEL || 'qwen3.8-27b';
       }
       const isStream = USE_SSE === '1';
       const clientAuth = req.headers.authorization || '';
@@ -204,9 +161,6 @@ function proxyOpenAI(req, res) {
       const headers = {
         'content-type': 'application/json',
         'accept': isStream ? 'text/event-stream' : (req.headers.accept || 'application/json'),
-        'x-session-id': req.headers['x-session-id'] || pickSessionId(),
-        'origin': 'https://opencode.ai/zen',
-        'referer': 'https://opencode.ai/zen',
       };
       if (authHeader) headers.authorization = authHeader;
 
