@@ -9,6 +9,7 @@
   const sendBtn = document.getElementById('send');
   const mediaImageBtn = document.getElementById('mediaImage');
   const mediaVideoBtn = document.getElementById('mediaVideo');
+  const mediaChips = Array.prototype.slice.call(document.querySelectorAll('.media-chip'));
   const newThreadBtn = document.getElementById('newThread');
   const threadList = document.getElementById('threadList');
   const statusDot = document.getElementById('statusDot');
@@ -123,8 +124,11 @@
     return el;
   }
 
-  // Pesan AI yang siap untuk streaming
-  function createAssistantMessage(rawText) {
+  // Pesan AI yang siap untuk streaming.
+  // `item` adalah objek riwayat yang dirender; tombol "Ulangi" memakai posisinya
+  // di array, bukan salinan teks saat render, agar tetap benar setelah jawaban
+  // diperbarui.
+  function createAssistantMessage(item) {
     const wrap = document.createElement('div');
     wrap.className = 'msg assistant';
     const tag = document.createElement('div');
@@ -151,12 +155,12 @@
     actions.appendChild(regenBtn);
 
     copyBtn.addEventListener('click', function () {
-      const text = rawText || inner.textContent || '';
-      copyToClipboard(text, copyBtn);
+      copyToClipboard(inner.textContent || '', copyBtn);
     });
     regenBtn.addEventListener('click', function () {
-      const target = (rawText != null) ? rawText : '';
-      regenerate(target, inner, tag, actions);
+      if (!item) return;
+      const th = history.find(function (h) { return h.id === threadId; });
+      regenerate(th ? th.items.indexOf(item) : -1, inner, tag, actions);
     });
 
     body.appendChild(inner);
@@ -195,6 +199,11 @@
       mediaVideoBtn.classList.toggle('active', mode === 'video');
       mediaVideoBtn.setAttribute('aria-pressed', mode === 'video' ? 'true' : 'false');
     }
+    mediaChips.forEach(function (chip) {
+      const on = chip.getAttribute('data-media') === mode;
+      chip.classList.toggle('active', on);
+      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
     const ph = mode === 'image'
       ? 'Tulis deskripsi gambar (mis. kucing memakai topi astronot)…'
       : mode === 'video'
@@ -284,29 +293,34 @@
   }
 
   // Ulangi: tulis ulang pesan assistant terakhir pada thread aktif.
-  async function regenerate(rawText, inner, tag, actions) {
+  async function regenerate(itemIdx, inner, tag, actions) {
     if (busy) return;
     const current = history.find(function (h) { return h.id === threadId; });
     if (!current) return;
 
-    // Temukan index pesan assistant yang sedang diperbarui.
-    let itemIdx = -1;
-    if (rawText != null) {
-      itemIdx = current.items.findIndex(function (i) { return i.role === 'assistant' && i.content === rawText; });
-    } else {
+    // Fallback: tanpa index, pakai jawaban assistant terakhir.
+    if (itemIdx == null || itemIdx < 0 || !current.items[itemIdx]) {
+      itemIdx = -1;
       for (let i = current.items.length - 1; i >= 0; i--) {
         if (current.items[i].role === 'assistant') { itemIdx = i; break; }
       }
     }
+    if (itemIdx < 0) return;
 
-    const lastUserMsg = (function () {
-      for (let i = current.items.length - 1; i >= 0; i--) {
-        if (current.items[i].role === 'user') return current.items[i].content;
-      }
-      return null;
-    })();
-
-    if (lastUserMsg == null) return;
+    // Hanya jawaban terakhir yang boleh diulang. Kalau sudah ada pesan user
+    // sesudahnya, jawaban ini bukan lagi ujung percakapan — mengulangnya akan
+    // menimpa konteks yang sudah berjalan.
+    const hasUserAfter = current.items.some(function (i, i2) {
+      return i2 > itemIdx && i.role === 'user';
+    });
+    if (hasUserAfter) {
+      setStatus('err', 'hanya jawaban terakhir yang bisa diulang');
+      return;
+    }
+    const hasUserBefore = current.items.some(function (i, i2) {
+      return i2 < itemIdx && i.role === 'user';
+    });
+    if (!hasUserBefore) return;
 
     busy = true;
     sendBtn.disabled = true;
@@ -316,12 +330,12 @@
     actions.style.display = 'none';
 
     try {
-      const msgs = buildThreadHistory();
+      // Jawaban lama dibuang dari konteks, kalau tidak model hanya menyalinnya.
+      const msgs = buildThreadHistory(itemIdx);
       const built = await chatAnswer(msgs, model.value);
       const finalText = built.content;
       inner.innerHTML = decorateText(finalText);
-      if (itemIdx >= 0) current.items[itemIdx].content = finalText;
-      else current.items.push({ role: 'assistant', content: finalText, model: built.modelId });
+      current.items[itemIdx] = { role: 'assistant', content: finalText, model: built.modelId };
       setStatus('on', 'terhubung');
     } catch (err) {
       inner.innerHTML = decorateText('Terjadi kesalahan saat mengulangi jawaban.\nDetail: ' + err.message);
@@ -722,17 +736,22 @@ function runOneModel(modelId, messages) {
     return { content: first.content, modelId: first.modelId };
   }
 
-  function buildThreadHistory() {
-    const th = history.find(function (h) { return h.id === threadId; });
-    if (!th) return [{ role: 'system', content: 'Kamu adalah Marbel AI. Saat ditanya siapa kamu, jawab sebagai Marbel AI. Jawab dengan bahasa Indonesia. Jangan gunakan tabel Markdown, jangan gunakan karakter "|", "---", atau "*". Balas ringkas, jelas, dan tanpa hiasan berlebihan.' }];
-    // Pesan media (gambar/video) tidak dikirim sebagai teks ke model chat.
-    const msgs = th.items.filter(function (i) { return !i.media; }).map(function (i) {
-      return { role: i.role, content: i.content };
-    });
-    msgs.unshift({
+  function buildThreadHistory(skipIndex) {
+    const systemMsg = {
       role: 'system',
       content: 'Kamu adalah Marbel AI. Saat ditanya siapa kamu, jawab sebagai Marbel AI. Jawab dengan bahasa Indonesia. Jangan gunakan tabel Markdown, jangan gunakan karakter "|", "---", atau "*". Balas ringkas, jelas, dan tanpa hiasan berlebihan.'
+    };
+    const th = history.find(function (h) { return h.id === threadId; });
+    if (!th) return [systemMsg];
+    // Pesan media (gambar/video) tidak dikirim sebagai teks ke model chat.
+    // skipIndex dipakai oleh "Ulangi": jawaban lama dibuang dari konteks supaya
+    // model benar-benar menjawab ulang, bukan menyalin jawaban sebelumnya.
+    const msgs = th.items.filter(function (i, idx) {
+      return !i.media && idx !== skipIndex;
+    }).map(function (i) {
+      return { role: i.role, content: i.content };
     });
+    msgs.unshift(systemMsg);
     return msgs;
   }
 
@@ -774,12 +793,13 @@ function runOneModel(modelId, messages) {
     th.items.forEach(function (i) {
       if (i.role === 'user') addUserMessage(i.content);
       else if (i.media) {
-        const msgEl = createAssistantMessage(i.content);
+        const msgEl = createAssistantMessage(i);
         renderMediaInto(msgEl, i.media);
-        if (msgEl.actions) msgEl.actions.style.display = i.content || 'none';
+        // Media tidak bisa diulang/di-copy sebagai teks.
+        if (msgEl.actions) msgEl.actions.style.display = 'none';
       }
       else {
-        const msgEl = createAssistantMessage(i.content);
+        const msgEl = createAssistantMessage(i);
         msgEl.inner.innerHTML = decorateText(i.content);
       }
     });
@@ -825,8 +845,9 @@ function runOneModel(modelId, messages) {
       const cur = history.find(function (h) { return h.id === threadId; });
       if (!cur) return;
       const content = (mode === 'image' ? '[Gambar] ' : '[Ilustrasi video] ') + text;
-      cur.items.push({ role: 'assistant', content: content, media: { kind: mode, prompt: text, url: url } });
-      const msgEl = createAssistantMessage(content);
+      const item = { role: 'assistant', content: content, media: { kind: mode, prompt: text, url: url } };
+      cur.items.push(item);
+      const msgEl = createAssistantMessage(item);
       msgEl.inner.innerHTML = '';
       const card = createMediaCard(mode, text, url, function (ok) {
         setStatus(ok ? 'on' : 'err', ok ? 'terhubung' : 'gagal memuat media');
@@ -848,24 +869,32 @@ function runOneModel(modelId, messages) {
 
     try {
       typing.remove();
-      const msgEls = createAssistantMessage();
+      // Item riwayat dibuat lebih dulu supaya tombol "Ulangi" punya rujukan
+      // index yang stabil sejak awal streaming.
+      const item = { role: 'assistant', content: '' };
+      const itemIdx = current.items.length;
+      current.items.push(item);
+      const msgEls = createAssistantMessage(item);
 
       const renderChunk = function (partial) {
         msgEls.inner.innerHTML = decorateText(partial);
         scrollDown();
       };
 
-      const built = await chatAnswer(buildThreadHistory(), selected, renderChunk);
+      // itemIdx dibuang dari konteks: isinya masih kosong saat request dibuat.
+      const built = await chatAnswer(buildThreadHistory(itemIdx), selected, renderChunk);
       msgEls.inner.innerHTML = decorateText(built.content);
+      item.content = built.content;
+      item.model = built.modelId;
       if (msgEls.actions) msgEls.actions.style.display = '';
-      current.items.push({ role: 'assistant', content: built.content, model: built.modelId });
       setStatus('on', 'terhubung');
     } catch (err) {
       typing.remove();
       const friendly = 'Terjadi kesalahan saat menghubungi server.\nDetail: ' + err.message + '\n\nMohon tunggu beberapa saat lalu coba lagi.';
-      current.items.push({ role: 'assistant', content: friendly });
+      const item = { role: 'assistant', content: friendly };
+      current.items.push(item);
 
-      const errEl = createAssistantMessage(friendly);
+      const errEl = createAssistantMessage(item);
       errEl.wrap.classList.add('err');
       errEl.inner.innerHTML = decorateText(friendly);
       errEl.actions.style.display = 'none';
@@ -932,6 +961,16 @@ function runOneModel(modelId, messages) {
   if (mediaVideoBtn) {
     mediaVideoBtn.addEventListener('click', function () { setMediaMode(mediaMode === 'video' ? '' : 'video'); });
   }
+
+  // Chip "Buat Gambar/Video" di layar sambutan: aktifkan mode media yang sama
+  // seperti tombol di composer.
+  mediaChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      const m = chip.getAttribute('data-media');
+      setMediaMode(mediaMode === m ? '' : m);
+      input.focus();
+    });
+  });
 
   function populateModelSelect(allIds, usableIds) {
     const seen = {};

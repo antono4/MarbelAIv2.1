@@ -7,13 +7,13 @@
   --bg-soft:#f2f2f0;
   --line:#e6e6e2;
   --text:#2b2438;
-  --muted:#6a6079;
-  --accent:#5b4bd6;
-  --accent-2:#0f8f83;
+  --muted:#8b8199;
+  --accent:#6c5ce7;
+  --accent-2:#00b8a9;
   --accent-ink:#ffffff;
   --mine:#f1edff;
-  --ok:#0e8d80;
-  --err:#c2351f;
+  --ok:#00b8a9;
+  --err:#e5533d;
   --code:#0b6b5c;
   --code-bg:#eef7f0;
   --panel:#ffffff;
@@ -34,13 +34,13 @@ html[data-theme="dark"] {
   --bg-soft:#191924;
   --line:#2c2c3e;
   --text:#eceaf4;
-  --muted:#a49cba;
-  --accent:#a99df4;
+  --muted:#9a92ad;
+  --accent:#8b7cee;
   --accent-2:#2dd4c4;
-  --accent-ink:#141122;
+  --accent-ink:#ffffff;
   --mine:#232332;
   --ok:#2dd4c4;
-  --err:#ff8570;
+  --err:#ff6b56;
   --code:#4fe0c8;
   --code-bg:#16211f;
   --panel:#1c1c29;
@@ -357,6 +357,31 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
   -webkit-text-fill-color:transparent; color:transparent;
 }
 
+/* ================== chip pembuat media di layar sambutan ================== */
+.media-suggest {
+  display:flex; gap:10px; flex-wrap:wrap;
+  justify-content:center;
+  margin-top:22px;
+}
+.media-chip {
+  display:flex; align-items:center; gap:10px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:10px 14px;
+  cursor:pointer;
+  color:var(--text);
+  font-family:inherit;
+  text-align:left;
+  transition:all .16s ease;
+}
+.media-chip:hover { border-color:var(--accent); transform:translateY(-1px); box-shadow:0 4px 16px var(--shadow); }
+.media-chip.active { border-color:var(--accent); background:var(--mine); }
+.mc-ico { font-size:20px; line-height:1; }
+.mc-tx { display:flex; flex-direction:column; }
+.mc-tx b { font-size:14px; }
+.mc-tx small { font-size:12px; color:var(--muted); }
+
 /* ================== messages (kolom tengah, ala Claude) ================== */
 .messages {
   --thread-max:780px;
@@ -672,6 +697,8 @@ textarea:focus-visible {
   .media-btn span { display:none; }
   .media-btn svg { margin:0; }
   .media-card { max-width:100%; }
+  .media-suggest { justify-content:flex-start; }
+  .media-chip { flex:1 1 100%; max-width:100%; }
 }
 
 /* Layar pendek (mis. ponsel lanskap): rapatkan padding agar konten tidak terpotong. */
