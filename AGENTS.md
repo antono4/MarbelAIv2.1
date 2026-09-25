@@ -78,3 +78,12 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 - File sumber memakai gaya penulisan tidak biasa (koma-titik tanpa spasi konsisten). `node -c` valid meskipun tampak aneh; jangan "merapikan" tanpa tes.
 - Untuk GitHub Pages (statis): UI memanggil provider CORS langsung (`DIRECT_UPSTREAMS` di `app.js`), tanpa backend. Bisa memakai backend via `?frontend=URL`.
 - Provider gratis mudah kena rate-limit (429) saat banyak request dari satu IP dalam waktu singkat; failover antar upstream di `directChat()`/`server.js` mengurangi hal ini.
+
+## Tombol "Ulangi" (regenerate) di `app.js`
+
+- `createAssistantMessage(item)` menerima **objek item riwayat**, bukan string. Ini disengaja: tombol "Ulangi" perlu posisi item di `thread.items`, dan salinan teks saat render jadi basi begitu jawaban ditimpa.
+- `regenerate(itemIdx, inner, tag, actions)` menerima index item. Jangan mengembalikannya ke pencarian berbasis `content === rawText`, karena teks tidak unik dan menjadi basi saat jawaban diubah.
+- `buildThreadHistory(skipIndex)` **membuang** item pada `skipIndex` dari konteks. Tanpa ini, model hanya menyalin jawaban lama, jadi tombol "Ulangi" tampak tidak berefek (jawaban identik).
+- Item riwayat assistant dibuat dan di-`push` **sebelum** render/streaming agar tombol punya index stabil. Pesan media juga di-`push` sebelum render, dan `.m-actions` disembunyikan untuk media.
+- Item riwayat disimpan dengan bentuk `{ role, content, model }`; jangan mengosongkan `content` pada item yang sudah tayang.
+
