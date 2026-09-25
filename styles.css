@@ -507,7 +507,14 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display:inline-flex; }
 }
 @keyframes media-spin { to { transform:rotate(360deg); } }
 .media-loading { font-size:13px; color:var(--muted); font-weight:600; }
-.media-err { font-size:13px; color:var(--err); font-weight:600; }
+.media-err {
+  display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+  padding:16px 14px;
+  background:var(--bg-soft);
+  border:1px dashed var(--line);
+  border-radius:10px;
+}
+.media-err-tx { font-size:13px; color:var(--err); font-weight:600; line-height:1.5; }
 
 /* tombol mode media di composer */
 .cf-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }

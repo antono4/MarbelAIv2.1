@@ -47,7 +47,7 @@ Pemanggilan model:
 Logika terpusat di `chatAnswer(messages, selected)`:
 
 - Moda "semua" (Auto Model): jalankan **semua model paralel** (`firstFulfilled`), jawaban lengkap yang paling cepat berhasil yang dipakai.
-- Nama model upstream **tidak ditampilkan** di UI (`.model-tag` dibiarkan kosong untuk chat). Hanya label media (`· Flux`, `· Pollinations Video`) yang diisi.
+- Nama model upstream **tidak ditampilkan** di UI (`.model-tag` dibiarkan kosong untuk chat). Hanya label media (`· Gambar`, `· Ilustrasi`) yang diisi.
 - Moda single model: coba model pilihan dulu, **failover berurutan** ke `FREE_MODELS` via `retryUntilResponse`.
 - Error apa pun (termasuk respons kosong) dianggap gagal agar failover/ulang otomatis tetap berjalan.
 - Ada tombol **Salin** (copy) dan **Ulangi** (regenerate) di tiap pesan assistant.
@@ -86,4 +86,13 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 - `buildThreadHistory(skipIndex)` **membuang** item pada `skipIndex` dari konteks. Tanpa ini, model hanya menyalin jawaban lama, jadi tombol "Ulangi" tampak tidak berefek (jawaban identik).
 - Item riwayat assistant dibuat dan di-`push` **sebelum** render/streaming agar tombol punya index stabil. Pesan media juga di-`push` sebelum render, dan `.m-actions` disembunyikan untuk media.
 - Item riwayat disimpan dengan bentuk `{ role, content, model }`; jangan mengosongkan `content` pada item yang sudah tayang.
+
+## Kartu media (gambar / ilustrasi video) di `app.js`
+
+- Provider gambar: **`https://api.a0.dev/assets/image`** (`IMAGE_ENDPOINT`), gratis tanpa API key, CORS aktif, hasil WEBP. Parameter: `text`, `aspect` (mis. `1:1`, `16:9`, `9:16`), `seed`.
+- `buildImageUrl(prompt, seed)` merakit URL. `seed` acak bila tidak diberikan; **"Coba lagi" wajib memakai seed baru**, karena mengulang URL yang sama hanya akan mengembalikan hasil gagal/cache yang sama.
+- `createMediaCard(kind, prompt, url, onStateChange, mediaObj)` menangani tiga status: `loading`, `ok`, `err` (lihat `showStates`). Objek `mediaObj` adalah item `media` di riwayat; retry memperbarui `mediaObj.url` agar URL di riwayat tidak basi.
+- Mode video tidak memakai provider video (tidak ada yang gratis via URL GET); mode ini memakai gambar a0.dev + animasi Ken Burns (`.media-burns`, keyframe `mburns`).
+- Kegagalan provider **bukan** kasus langka: sejak Sep 2026 pollinations memblokir tier anonim (402 `INSUFFICIENT_BALANCE` / 429 `Queue full for IP`), dan `gen.pollinations.ai` mewajibkan API key. Jangan menambah ketergantungan baru pada endpoint itu tanpa kunci berbayar.
+- Kotak galat (`.media-err`) menyediakan tombol `Coba lagi`; jangan mengganti dengan teks pasif "coba lagi" saja — pengguna tidak punya cara memicu ulang.
 
