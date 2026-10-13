@@ -1,8 +1,8 @@
 from PIL import Image, ImageDraw
 import os
 
-C1 = (0x6C, 0x5C, 0xE7)
-C2 = (0x00, 0xB8, 0xA9)
+C1 = (0x42, 0x85, 0xF4)
+C2 = (0x9B, 0x72, 0xCB)
 
 # Bintang 4 sudut + titik kecil, diskalakan dari viewBox 32 pada favicon index.html.
 STAR = [(16, 5), (18.3, 11.9), (19.8, 13.4), (26.7, 16), (19.8, 18.6),
