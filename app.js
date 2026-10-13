@@ -955,9 +955,8 @@ function runOneModel(modelId, messages) {
 
   const savedTheme = localStorage.getItem('marbel-theme');
   if (savedTheme == null) {
-    if (window.matchMedia('(prefers-color-scheme:dark)').matches) {
-      document.documentElement.dataset.theme = 'dark';
-    }
+    // Desain terlampir bertema gelap; jadikan itu default saat belum ada pilihan.
+    document.documentElement.dataset.theme = 'dark';
   } else {
     setTheme(savedTheme);
   }
@@ -989,6 +988,17 @@ function runOneModel(modelId, messages) {
       const m = chip.getAttribute('data-media');
       setMediaMode(mediaMode === m ? '' : m);
       input.focus();
+    });
+  });
+
+  // Kartu saran teks di layar sambutan: isi composer lalu kirim.
+  Array.prototype.slice.call(document.querySelectorAll('.suggest-card[data-prompt]')).forEach(function (card) {
+    card.addEventListener('click', function () {
+      setMediaMode('');
+      input.value = card.getAttribute('data-prompt') || '';
+      resize();
+      input.focus();
+      onSend();
     });
   });
 

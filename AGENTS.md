@@ -73,6 +73,15 @@ Logika terpusat di `chatAnswer(messages, selected)`:
 - `android/marbel-release.keystore` + `android/keystore.properties` **jangan di-commit** (sudah masuk `.gitignore`).
 - Catatan pengujian: provider uncloseai mudah kena 429 bila request datang dari IP datacenter/lokal; di perangkat nyata normal. Uji perilaku UI dengan menyuntik shim `window.Capacitor={isNativePlatform:()=>true}` sebelum `<script src="app.js">`.
 
+## Tampilan (UI terlampir, tema gelap ala Gemini)
+
+- `index.html` + `styles.css` memakai gaya desain "terlampir": tema **gelap** sebagai default (`--bg:#131314`), aksen biru-ungu (`--accent:#4285f4`, `--accent-2:#9b72cb`, `--accent-3:#d96570`), sidebar drawer, kartu saran, dan composer mengambang. Mode siang tetap ada (`html[data-theme="light"]`).
+- Default tema di `app.js` kini `dark` bila belum ada pilihan tersimpan (dulu mengikuti `prefers-color-scheme`).
+- Kontrak DOM `app.js` **wajib** dipertahankan saat mengubah markup: id `welcome`, `messages`, `activeBadge`, `form`, `input`, `model`, `send`, `mediaImage`, `mediaVideo`, `newThread`, `threadList`, `statusDot`, `statusLabel`, `statusIcon`, `sideToggle`, `themeToggle`, `panelHide`; kelas `.layout`, `.media-chip` (di sidebar sambutan), `.scrim` (dibuat runtime).
+- Tombol media: `#mediaImage` (mode Gambar) dan `#mediaVideo` (mode Video) ada di `.composer-footer`; keduanya `data-mode`. Kartu saran memakai `.suggest-card`; yang `data-prompt` (teks) langsung mengirim, yang `.media-chip` (`data-media`) hanya mengaktifkan mode.
+- Sidebar disembunyikan dengan kelas `collapsed` di `.layout`; di ponsel (`≤768px`) ia jadi drawer + `.scrim` yang menutup saat diketuk.
+- Ikon launcher (`build-icon.py`) memakai gradien `#4285F4 → #9B72CB`; `ic_launcher_background.xml` disetel `#4285F4` agar adaptive icon selaras. Build APK tidak dilakukan di CI (butuh JDK 17 + Android SDK).
+
 ## Catatan penting
 
 - File sumber memakai gaya penulisan tidak biasa (koma-titik tanpa spasi konsisten). `node -c` valid meskipun tampak aneh; jangan "merapikan" tanpa tes.
